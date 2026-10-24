@@ -1,0 +1,1133 @@
+<title>Блок-Квест</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Russo+One&family=Rubik:wght@500;600;700&display=swap&subset=cyrillic">
+<style>
+/* Layout: блочный игровой мир. Хаб с мирами-карточками, один экран = одно задание, толстые «кубические» кнопки. */
+:root {
+  --night: #141a2e; --panel: #212a47; --panel2: #2b3660; --edge: #0b0f20;
+  --ink: #f4f6ff; --dim: #aab5db; --dark: #10131f;
+  --grass: #58cc4a; --grass-d: #2c8a27; --gold: #ffc72c; --gold-d: #b07d00;
+  --red: #ff5050; --red-d: #a31d1d; --blue: #3fa7ff; --blue-d: #1c5ea6;
+  --purple: #a96bff; --purple-d: #5b30ad; --orange: #ff8a30; --orange-d: #a1520d;
+  --teal: #27d6b9; --teal-d: #0e8573; --pink: #ff63ad; --pink-d: #a2276d;
+  --lime: #b6e83a; --lime-d: #6c8d0f; --cyan: #4fd8ff; --cyan-d: #157d9e;
+  --silver: #d5dcf7; --silver-d: #6f7aa8;
+  --font-d: 'Russo One', 'Arial Black', Impact, sans-serif;
+  --font-b: 'Rubik', 'Segoe UI', Arial, sans-serif;
+  color-scheme: dark;
+}
+.c-orange { --c: var(--orange); --cd: var(--orange-d); }
+.c-blue { --c: var(--blue); --cd: var(--blue-d); }
+.c-purple { --c: var(--purple); --cd: var(--purple-d); }
+.c-teal { --c: var(--teal); --cd: var(--teal-d); }
+.c-grass { --c: var(--grass); --cd: var(--grass-d); }
+.c-pink { --c: var(--pink); --cd: var(--pink-d); }
+.c-red { --c: var(--red); --cd: var(--red-d); }
+.c-gold { --c: var(--gold); --cd: var(--gold-d); }
+.c-lime { --c: var(--lime); --cd: var(--lime-d); }
+.c-cyan { --c: var(--cyan); --cd: var(--cyan-d); }
+.c-silver { --c: var(--silver); --cd: var(--silver-d); }
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; min-height: 100%;
+  font: 500 16px/1.45 var(--font-b); color: var(--ink);
+  background-color: var(--night);
+  background-image: linear-gradient(rgba(255,255,255,.035) 2px, transparent 2px), linear-gradient(90deg, rgba(255,255,255,.035) 2px, transparent 2px);
+  background-size: 48px 48px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 16px 40px;
+}
+#app { max-width: 980px; margin: 0 auto; }
+h1, h2, h3 { font-family: var(--font-d); font-weight: 400; margin: 0; letter-spacing: .02em; text-wrap: balance; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.dim { color: var(--dim); }
+.row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.sp { flex: 1 1 auto; }
+
+/* кнопки-блоки */
+.btn {
+  font-family: var(--font-d); font-size: 1.05rem; letter-spacing: .02em; color: var(--dark);
+  background: var(--c, var(--grass)); border: 0; border-bottom: 6px solid var(--cd, var(--grass-d));
+  border-radius: 6px; padding: .65em 1.1em; cursor: pointer;
+  box-shadow: inset 0 3px 0 rgba(255,255,255,.35); transition: transform .06s;
+  display: inline-flex; align-items: center; justify-content: center; gap: .5em; text-align: center;
+}
+.btn:active { transform: translateY(4px); border-bottom-width: 2px; }
+.btn[disabled] { filter: grayscale(1) brightness(.6); cursor: not-allowed; }
+.btn.ghost { background: var(--panel2); color: var(--ink); border-bottom-color: var(--edge); box-shadow: inset 0 3px 0 rgba(255,255,255,.08); }
+.btn.sm { font-size: .88rem; padding: .45em .8em; border-bottom-width: 4px; }
+.btn.big { font-size: 1.25rem; padding: .8em 1.4em; }
+.btn.red { --c: var(--red); --cd: var(--red-d); }
+.btn.gold { --c: var(--gold); --cd: var(--gold-d); }
+.btn.blue { --c: var(--blue); --cd: var(--blue-d); }
+
+.panel { background: var(--panel); border-bottom: 6px solid var(--edge); border-radius: 8px; padding: 16px; }
+.chip { display: inline-flex; align-items: center; gap: .45em; background: var(--panel); border-bottom: 4px solid var(--edge); border-radius: 6px; padding: .35em .7em; font-family: var(--font-d); }
+.ci { display: inline-block; width: 1.05em; height: 1.05em; background: var(--gold); border: .14em solid var(--gold-d); box-shadow: inset .12em .12em 0 #fff2a8; vertical-align: -.15em; }
+.x { font-style: italic; font-weight: 700; }
+.fr { display: inline-flex; flex-direction: column; align-items: center; vertical-align: middle; line-height: 1.05; margin: 0 .15em; font-family: var(--font-d); }
+.fr i { font-style: normal; padding: 0 .25em .08em; border-bottom: .09em solid currentColor; }
+.fr b { font-weight: 400; padding-top: .08em; }
+
+/* шапка */
+.head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.brand { font-family: var(--font-d); font-size: clamp(1.5rem, 5vw, 2.2rem); line-height: 1; }
+.brand span { color: var(--grass); }
+.brand small { display: block; font: 500 .8rem var(--font-b); color: var(--dim); letter-spacing: 0; margin-top: 4px; }
+
+/* герой */
+.hero { display: grid; grid-template-columns: auto 1fr; gap: 0 24px; align-items: end; background: #3a86e6; border-radius: 8px 8px 0 0; padding: 18px 20px 0; position: relative; overflow: hidden; }
+.hero .who { padding-bottom: 20px; color: #fff; min-width: 0; }
+.hero .name { font-family: var(--font-d); font-size: clamp(1.3rem, 4vw, 1.9rem); }
+.hero .rank { color: #dcecff; margin-bottom: 10px; }
+.stage { width: 112px; }
+.stage svg { display: block; width: 100%; height: auto; }
+.ground { grid-column: 1 / -1; height: 44px; margin: 0 -20px; background: linear-gradient(var(--grass) 0 14px, transparent 14px), repeating-linear-gradient(90deg, #8a5632 0 36px, #7a4a2a 36px 72px); box-shadow: inset 0 14px 0 var(--grass-d); }
+.heroNav { display: flex; gap: 10px; flex-wrap: wrap; background: var(--panel); border-radius: 0 0 8px 8px; padding: 12px 16px; border-bottom: 6px solid var(--edge); }
+.xp { display: flex; gap: 3px; margin: 6px 0 4px; }
+.xp i { flex: 1; height: 12px; background: rgba(0,0,0,.35); max-width: 22px; }
+.xp i.on { background: var(--gold); box-shadow: inset 0 3px 0 rgba(255,255,255,.4); }
+
+/* миры */
+.sec { margin: 26px 0 12px; font-size: 1.3rem; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+.wcard { text-align: left; cursor: pointer; background: var(--panel); border: 0; border-bottom: 6px solid var(--edge); border-radius: 8px; padding: 14px; display: grid; grid-template-columns: 64px 1fr; gap: 12px; align-items: center; transition: transform .1s, background .1s; min-width: 0; }
+.wcard:hover { transform: translateY(-3px); background: var(--panel2); }
+.wcard:active { transform: translateY(2px); }
+.glyph { width: 64px; height: 64px; display: grid; place-items: center; background: var(--c); border-bottom: 5px solid var(--cd); border-radius: 6px; box-shadow: inset 0 3px 0 rgba(255,255,255,.4); color: var(--dark); font-family: var(--font-d); font-size: 1.6rem; line-height: 1; }
+.glyph.s3 { font-size: 1.15rem; }
+.glyph.xl { width: 84px; height: 84px; font-size: 2.2rem; }
+.wcard h3 { font-size: 1.05rem; line-height: 1.2; }
+.wcard p { margin: 2px 0 6px; font-size: .86rem; color: var(--dim); line-height: 1.3; }
+.mini { display: flex; gap: 3px; align-items: center; font-size: .82rem; color: var(--dim); }
+.mini .bar { flex: 1; height: 8px; background: rgba(0,0,0,.4); max-width: 120px; }
+.mini .bar i { display: block; height: 100%; background: var(--c); }
+.blitz { grid-column: 1 / -1; }
+.blitz .wcard { width: 100%; background: linear-gradient(90deg, #5a1d25, #3a1d52); }
+
+/* уровни мира */
+.lv { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; margin-top: 16px; }
+.lvc { background: var(--panel); border-bottom: 6px solid var(--edge); border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+.lvc h3 { font-size: 1.2rem; }
+.lvc.rec { outline: 3px dashed var(--c); outline-offset: 3px; }
+.stars { display: inline-flex; gap: 4px; }
+.star { width: 28px; height: 28px; display: grid; place-items: center; background: rgba(0,0,0,.4); color: transparent; font-size: 18px; line-height: 1; border-radius: 4px; }
+.star.on { background: var(--gold); color: var(--dark); border-bottom: 3px solid var(--gold-d); }
+.stars.lg .star { width: 56px; height: 56px; font-size: 36px; }
+.stars.lg .star.on { animation: pop .45s cubic-bezier(.3, 1.6, .5, 1) both; }
+.stars.lg .star.on:nth-child(2) { animation-delay: .25s; }
+.stars.lg .star.on:nth-child(3) { animation-delay: .5s; }
+
+/* игра */
+.play { max-width: 640px; margin: 0 auto; }
+.hud { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+.hearts { display: flex; gap: 4px; }
+.hearts svg { width: 26px; height: 22px; display: block; }
+.prog { flex: 1 1 140px; display: flex; gap: 3px; min-width: 120px; }
+.prog i { flex: 1; height: 16px; background: rgba(0,0,0,.4); }
+.prog i.on { background: var(--c); box-shadow: inset 0 4px 0 rgba(255,255,255,.4); animation: pop .3s; }
+.combo { font-family: var(--font-d); color: var(--dark); background: var(--orange); border-bottom: 4px solid var(--orange-d); border-radius: 6px; padding: .2em .6em; }
+.qcard { background: var(--panel); border-bottom: 6px solid var(--edge); border-top: 8px solid var(--c); border-radius: 8px; padding: 16px; }
+.qtag { font-size: .8rem; letter-spacing: .08em; text-transform: uppercase; color: var(--dim); margin-bottom: 8px; }
+.q { font-family: var(--font-d); font-size: clamp(1.35rem, 5.2vw, 2rem); line-height: 1.3; overflow-wrap: anywhere; }
+.q.long { font-family: var(--font-b); font-weight: 600; font-size: clamp(1.1rem, 4.2vw, 1.35rem); line-height: 1.45; }
+.figwrap { margin-top: 12px; display: flex; justify-content: center; overflow-x: auto; }
+.fig { width: 100%; max-width: 320px; height: auto; background: rgba(0,0,0,.25); border-radius: 6px; }
+.fig.small { max-width: 190px; }
+.fig text { fill: #f4f6ff; font: 600 15px var(--font-b); }
+.fig text.sm { font-size: 12px; fill: #aab5db; }
+.fields { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 16px; align-items: flex-end; }
+.fld { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.fld .lab { font-size: .85rem; color: var(--dim); }
+.fld .box { display: flex; align-items: center; gap: 8px; }
+.fld .val { min-width: 130px; min-height: 58px; padding: 0 14px; display: flex; align-items: center; font-family: var(--font-d); font-size: 1.9rem; background: #0e1326; border: 4px solid #3a456f; border-radius: 6px; cursor: pointer; font-variant-numeric: tabular-nums; }
+.fld.act .val { border-color: var(--c); box-shadow: 0 0 0 3px rgba(255,255,255,.15); }
+.fld .val.empty::after { content: ''; width: 3px; height: 1.5em; background: var(--dim); animation: blink 1s steps(2) infinite; }
+.fld.act .val:not(.empty)::after { content: ''; width: 3px; height: 1.5em; background: var(--c); margin-left: 3px; animation: blink 1s steps(2) infinite; }
+.unit { color: var(--dim); font-size: 1.05rem; }
+.choices { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; margin-top: 16px; }
+.choices .btn { font-size: 1.15rem; min-height: 58px; }
+.hintbox { margin-top: 12px; background: rgba(79,216,255,.12); border-left: 6px solid var(--cyan); padding: 10px 12px; border-radius: 0 6px 6px 0; }
+.fb { margin-top: 14px; padding: 12px 14px; border-radius: 6px; font-weight: 600; }
+.fb.ok { background: rgba(88,204,74,.18); border-left: 8px solid var(--grass); }
+.fb.bad { background: rgba(255,80,80,.16); border-left: 8px solid var(--red); }
+.fb b { font-family: var(--font-d); font-weight: 400; font-size: 1.25rem; display: block; }
+.fb .ex { font-weight: 500; color: var(--ink); margin-top: 6px; }
+.fb .ans { font-family: var(--font-d); font-size: 1.3rem; color: var(--gold); }
+.pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 14px; }
+.pad .btn { min-height: 60px; font-size: 1.5rem; --c: var(--silver); --cd: var(--silver-d); padding: 0; }
+.pad .btn.k-ok { --c: var(--grass); --cd: var(--grass-d); font-size: 1.1rem; }
+.pad .btn.k-back { --c: var(--orange); --cd: var(--orange-d); }
+.tools { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+.nextbar { margin-top: 14px; display: flex; }
+.nextbar .btn { flex: 1; }
+.flash { margin-top: 10px; min-height: 1.6em; font-weight: 700; }
+.flash.ok { color: var(--grass); }
+.flash.bad { color: var(--orange); }
+.timer { flex: 1 1 160px; height: 18px; background: rgba(0,0,0,.45); position: relative; min-width: 120px; }
+.timer i { position: absolute; inset: 0 auto 0 0; background: var(--red); box-shadow: inset 0 4px 0 rgba(255,255,255,.35); }
+.tnum { font-family: var(--font-d); font-size: 1.4rem; min-width: 2.4ch; text-align: right; font-variant-numeric: tabular-nums; }
+.shake { animation: shake .35s; }
+.floaty { position: fixed; z-index: 30; pointer-events: none; font-family: var(--font-d); font-size: 1.6rem; color: var(--gold); text-shadow: 0 3px 0 #000; animation: floaty .9s ease-out forwards; }
+
+/* итог и сундук */
+.result { max-width: 640px; margin: 0 auto; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 16px; }
+.result h2 { font-size: clamp(1.7rem, 6vw, 2.4rem); }
+.stat { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.stat .chip { min-width: 110px; flex-direction: column; gap: 0; padding: .5em .9em; }
+.stat .chip small { font: 500 .78rem var(--font-b); color: var(--dim); }
+.stat .chip b { font-weight: 400; font-size: 1.5rem; }
+.chest { width: 150px; }
+.chest svg { width: 100%; height: auto; display: block; overflow: visible; }
+.chest .lid { transform-origin: 20px 40px; transition: transform .5s cubic-bezier(.3, 1.4, .5, 1); }
+.chest.open .lid { transform: rotate(-38deg) translate(-4px, -4px); }
+.chest.open .glow { opacity: 1; }
+.chest .glow { opacity: 0; transition: opacity .4s .2s; }
+.chest.wob { animation: wob .5s infinite; }
+.lvup { background: var(--gold); color: var(--dark); border-bottom: 5px solid var(--gold-d); border-radius: 6px; padding: .4em 1em; font-family: var(--font-d); animation: pop .5s; }
+
+/* магазин / награды */
+.shop { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 14px; }
+.skin { background: var(--panel); border-bottom: 6px solid var(--edge); border-radius: 8px; padding: 12px; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
+.skin.eq { outline: 3px solid var(--grass); }
+.skin .pv { width: 80px; background: rgba(0,0,0,.25); border-radius: 6px; padding: 6px; }
+.skin .pv svg { display: block; width: 100%; height: auto; }
+.prize { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; background: var(--panel); border-bottom: 6px solid var(--edge); border-radius: 8px; padding: 14px; }
+.prize + .prize { margin-top: 10px; }
+.prize .t { flex: 1 1 200px; font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
+
+/* репетитор */
+.tut { display: grid; gap: 16px; }
+.tut h3 { font-size: 1.15rem; margin-bottom: 10px; }
+.tbl { width: 100%; border-collapse: collapse; font-size: .92rem; }
+.tbl th, .tbl td { padding: 8px 6px; text-align: left; border-bottom: 2px solid rgba(255,255,255,.08); vertical-align: middle; }
+.tbl th { color: var(--dim); font-weight: 500; font-size: .8rem; }
+.tscroll { overflow-x: auto; }
+.acc { display: inline-block; width: 90px; height: 10px; background: rgba(0,0,0,.45); vertical-align: middle; margin-right: 8px; }
+.acc i { display: block; height: 100%; }
+.mis { display: grid; gap: 8px; }
+.mis > div { background: rgba(0,0,0,.25); border-left: 6px solid var(--red); padding: 8px 12px; border-radius: 0 6px 6px 0; overflow-wrap: anywhere; font-size: .92rem; }
+.set { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.tog { cursor: pointer; display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; background: rgba(0,0,0,.3); border-radius: 6px; border: 3px solid transparent; font-weight: 600; }
+.tog[aria-pressed="true"] { border-color: var(--grass); }
+.tog i { width: 16px; height: 16px; background: #3a456f; display: inline-block; }
+.tog[aria-pressed="true"] i { background: var(--grass); }
+input[type="text"], input[type="number"] { font: inherit; color: var(--ink); background: #0e1326; border: 3px solid #3a456f; border-radius: 6px; padding: 8px 10px; min-width: 0; }
+input[type="number"] { width: 90px; }
+.prow { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
+.prow input[type="text"] { flex: 1 1 200px; }
+
+/* окно и подсказка */
+.modal { position: fixed; inset: 0; z-index: 40; background: rgba(5,8,20,.75); display: grid; place-items: center; padding: 20px; }
+.modal .box { background: var(--panel); border-bottom: 6px solid var(--edge); border-radius: 8px; padding: 20px; max-width: 420px; width: 100%; display: flex; flex-direction: column; gap: 14px; }
+.toast { position: fixed; left: 50%; bottom: max(20px, env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 50; background: var(--ink); color: var(--dark); font-weight: 700; padding: .6em 1.1em; border-radius: 6px; border-bottom: 4px solid var(--silver-d); max-width: calc(100vw - 32px); text-align: center; animation: pop .25s; }
+
+@keyframes pop { 0% { transform: scale(.3); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+@keyframes shake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-9px); } 40% { transform: translateX(9px); } 60% { transform: translateX(-6px); } 80% { transform: translateX(6px); } }
+@keyframes blink { 50% { opacity: 0; } }
+@keyframes floaty { from { transform: translateY(0); opacity: 1; } to { transform: translateY(-70px); opacity: 0; } }
+@keyframes wob { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
+
+@media (max-width: 520px) {
+  .hero { grid-template-columns: 90px 1fr; gap: 0 14px; }
+  .stage { width: 90px; }
+  .grid { grid-template-columns: 1fr; }
+  .fld .val { min-width: 110px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+.fld .val.ok { border-color: var(--grass); background: rgba(88,204,74,.14); }
+.fld .val.bad { border-color: var(--red); background: rgba(255,80,80,.12); }
+.tut { grid-template-columns: minmax(0, 1fr); }
+.tut > * { min-width: 0; }
+.prog { flex: 1 1 70px; min-width: 70px; }
+@media (max-width: 520px) { .hud { gap: 8px; } .hearts svg { width: 22px; height: 19px; } }
+</style>
+<div id="app"></div>
+<script>
+(function (root) {
+'use strict';
+var rnd = function (a, b) { return Math.floor(Math.random() * (b - a + 1)) + a; };
+var pick = function (a) { return a[rnd(0, a.length - 1)]; };
+var NB = ' ';
+var fmt = function (n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, NB); };
+var pl = function (n, f) {
+  var a = Math.abs(n) % 100, b = a % 10;
+  if (a > 10 && a < 20) return f[2];
+  if (b > 1 && b < 5) return f[1];
+  if (b === 1) return f[0];
+  return f[2];
+};
+var np = function (n, f) { return fmt(n) + NB + pl(n, f); };
+var frac = function (n, d) { return '<span class="fr"><i>' + n + '</i><b>' + d + '</b></span>'; };
+var X = '<i class="x">x</i>';
+var shuffle = function (a) {
+  a = a.slice();
+  for (var i = a.length - 1; i > 0; i--) { var j = rnd(0, i); var t = a[i]; a[i] = a[j]; a[j] = t; }
+  return a;
+};
+var num = function (q, ans, expl, x) {
+  x = x || {};
+  return { type: 'num', q: q, ans: [].concat(ans), fields: x.fields || [{ label: '', unit: x.unit || '' }],
+    expl: expl || '', fig: x.fig || '', hint: x.hint || '' };
+};
+var ch = function (q, choices, ans, expl, x) {
+  x = x || {};
+  return { type: 'choice', q: q, choices: choices, ans: [ans], fields: [], expl: expl || '', fig: x.fig || '', hint: x.hint || '' };
+};
+
+/* ---------- слова для задач ---------- */
+var KR = ['кристалл', 'кристалла', 'кристаллов'], MN = ['монета', 'монеты', 'монет'],
+  BL = ['блок', 'блока', 'блоков'], AL = ['алмаз', 'алмаза', 'алмазов'],
+  FK = ['факел', 'факела', 'факелов'], YA = ['ящик', 'ящика', 'ящиков'],
+  MC = ['меч', 'меча', 'мечей'], NA = ['набор', 'набора', 'наборов'],
+  CH = ['час', 'часа', 'часов'], RZ = ['раз', 'раза', 'раз'];
+
+/* ---------- рисунки ---------- */
+function rectFig(w, h, lw, lh, grid) {
+  var VW = 260, VH = 170, s = Math.min(190 / w, 110 / h), rw = w * s, rh = h * s,
+    x0 = (VW - rw) / 2 + 10, y0 = (VH - rh) / 2 - 8, g = '', i;
+  if (grid && w <= 14 && h <= 12) {
+    for (i = 1; i < w; i++) g += '<line x1="' + (x0 + i * s) + '" y1="' + y0 + '" x2="' + (x0 + i * s) + '" y2="' + (y0 + rh) + '"/>';
+    for (i = 1; i < h; i++) g += '<line x1="' + x0 + '" y1="' + (y0 + i * s) + '" x2="' + (x0 + rw) + '" y2="' + (y0 + i * s) + '"/>';
+  }
+  return '<svg class="fig" viewBox="0 0 ' + VW + ' ' + VH + '" role="img" aria-label="Прямоугольник">' +
+    '<rect x="' + x0 + '" y="' + y0 + '" width="' + rw + '" height="' + rh + '" fill="rgba(63,167,255,.25)" stroke="#3fa7ff" stroke-width="4"/>' +
+    '<g stroke="rgba(255,255,255,.28)" stroke-width="1">' + g + '</g>' +
+    (lw ? '<text x="' + (x0 + rw / 2) + '" y="' + (y0 + rh + 24) + '" text-anchor="middle">' + lw + '</text>' : '') +
+    (lh ? '<text x="' + (x0 - 10) + '" y="' + (y0 + rh / 2) + '" text-anchor="end" dominant-baseline="middle">' + lh + '</text>' : '') +
+    '</svg>';
+}
+function lFig(W, H, nw, nh) {
+  var VW = 260, VH = 180, s = Math.min(180 / W, 115 / H), x0 = (VW - W * s) / 2 + 14, y0 = 12;
+  var p = [[0, 0], [W - nw, 0], [W - nw, nh], [W, nh], [W, H], [0, H]].map(function (q) { return (x0 + q[0] * s) + ',' + (y0 + q[1] * s); }).join(' ');
+  return '<svg class="fig" viewBox="0 0 ' + VW + ' ' + VH + '" role="img" aria-label="Фигура из двух прямоугольников">' +
+    '<polygon points="' + p + '" fill="rgba(88,204,74,.25)" stroke="#58cc4a" stroke-width="4" stroke-linejoin="round"/>' +
+    '<text x="' + (x0 + W * s / 2) + '" y="' + (y0 + H * s + 24) + '" text-anchor="middle">' + W + ' см</text>' +
+    '<text x="' + (x0 - 10) + '" y="' + (y0 + H * s / 2) + '" text-anchor="end" dominant-baseline="middle">' + H + ' см</text>' +
+    '<text x="' + (x0 + (W - nw / 2) * s) + '" y="' + (y0 + nh * s - 8) + '" text-anchor="middle">' + nw + ' см</text>' +
+    '<text x="' + (x0 + (W - nw) * s + 8) + '" y="' + (y0 + nh * s / 2) + '" text-anchor="start" dominant-baseline="middle">' + nh + ' см</text>' +
+    '</svg>';
+}
+function barFig(labels, vals) {
+  var VW = 300, VH = 190, x0 = 40, y0 = 160, top = 14, max = Math.ceil(Math.max.apply(null, vals) / 10) * 10, sc = (y0 - top) / max, g = '', i;
+  for (i = 0; i <= max; i += 10) {
+    g += '<line x1="' + x0 + '" y1="' + (y0 - i * sc) + '" x2="' + (VW - 8) + '" y2="' + (y0 - i * sc) + '" stroke="rgba(255,255,255,.2)"/>' +
+      '<text x="' + (x0 - 6) + '" y="' + (y0 - i * sc) + '" text-anchor="end" dominant-baseline="middle" class="sm">' + i + '</text>';
+  }
+  var cols = ['#ff8a30', '#3fa7ff', '#a96bff', '#58cc4a', '#ffc72c'], n = vals.length, slot = (VW - x0 - 8) / n, bw = slot * 0.6;
+  for (i = 0; i < n; i++) {
+    var bx = x0 + i * slot + (slot - bw) / 2;
+    g += '<rect x="' + bx + '" y="' + (y0 - vals[i] * sc) + '" width="' + bw + '" height="' + (vals[i] * sc) + '" fill="' + cols[i % 5] + '"/>' +
+      '<text x="' + (bx + bw / 2) + '" y="' + (y0 + 20) + '" text-anchor="middle">' + labels[i] + '</text>';
+  }
+  return '<svg class="fig" viewBox="0 0 ' + VW + ' ' + VH + '" role="img" aria-label="Столбчатая диаграмма">' + g + '</svg>';
+}
+function gridFig(n) {
+  var c = 40, pad = 10, S = n * c + pad * 2, g = '', i;
+  for (i = 0; i <= n; i++) {
+    g += '<line x1="' + (pad + i * c) + '" y1="' + pad + '" x2="' + (pad + i * c) + '" y2="' + (pad + n * c) + '"/>' +
+      '<line x1="' + pad + '" y1="' + (pad + i * c) + '" x2="' + (pad + n * c) + '" y2="' + (pad + i * c) + '"/>';
+  }
+  return '<svg class="fig small" viewBox="0 0 ' + S + ' ' + S + '" role="img" aria-label="Квадрат, разделённый на клетки">' +
+    '<rect x="' + pad + '" y="' + pad + '" width="' + (n * c) + '" height="' + (n * c) + '" fill="rgba(169,107,255,.22)"/>' +
+    '<g stroke="#a96bff" stroke-width="3">' + g + '</g></svg>';
+}
+
+/* ---------- УМНОЖЕНИЕ ---------- */
+var mult = [
+  [
+    function () { var a = rnd(2, 9), b = rnd(2, 9); return num(a + ' × ' + b + ' = ?', a * b, a + ' × ' + b + ' = ' + a * b, { hint: 'Вспомни таблицу умножения: считай группами по ' + a + '.' }); },
+    function () { var a = rnd(2, 9), b = rnd(2, 9); return num(a + ' × ? = ' + a * b, b, 'Неизвестный множитель: ' + a * b + ' : ' + a + ' = ' + b, { hint: 'Раздели произведение на известный множитель.' }); },
+    function () { var a = rnd(11, 99), b = pick([10, 100]); return num(a + ' × ' + b + ' = ?', a * b, 'При умножении на ' + b + ' справа дописываем ' + (b === 10 ? 'один ноль' : 'два нуля') + ': ' + a * b, { hint: 'Припиши нули справа.' }); }
+  ],
+  [
+    function () {
+      var a = rnd(12, 99), b = rnd(3, 9), t = Math.floor(a / 10) * 10, o = a % 10;
+      return num(a + ' × ' + b + ' = ?', a * b, a + ' = ' + t + ' + ' + o + '. ' + t + ' × ' + b + ' = ' + t * b + ', ' + o + ' × ' + b + ' = ' + o * b + '. Сложим: ' + t * b + ' + ' + o * b + ' = ' + a * b,
+        { hint: 'Раздели число на десятки и единицы, умножь каждую часть.' });
+    },
+    function () {
+      var a = rnd(100, 300), b = rnd(2, 4), h = Math.floor(a / 100) * 100, r = a - h;
+      return num(a + ' × ' + b + ' = ?', a * b, h + ' × ' + b + ' = ' + h * b + ', ' + r + ' × ' + b + ' = ' + r * b + '. Сложим: ' + a * b, { hint: 'Умножь сотни и остаток отдельно.' });
+    },
+    function () { var a = rnd(12, 60), b = rnd(2, 9); return num('? × ' + b + ' = ' + a * b, a, 'Неизвестный множитель: ' + a * b + ' : ' + b + ' = ' + a, { hint: 'Раздели произведение на известный множитель.' }); }
+  ],
+  [
+    function () {
+      var a = rnd(101, 999), b = rnd(3, 9), r = a % 100, h = a - r;
+      return num(a + ' × ' + b + ' = ?', a * b, h + ' × ' + b + ' = ' + h * b + ', ' + r + ' × ' + b + ' = ' + r * b + '. Сложим: ' + a * b, { hint: 'Умножай по частям: сотни, потом остаток.' });
+    },
+    function () {
+      var a = rnd(12, 49), b = rnd(11, 29), tb = Math.floor(b / 10) * 10, ob = b % 10;
+      return num(a + ' × ' + b + ' = ?', a * b, a + ' × ' + tb + ' = ' + a * tb + ', ' + a + ' × ' + ob + ' = ' + a * ob + '. Сложим: ' + a * tb + ' + ' + a * ob + ' = ' + a * b, { hint: 'Умножь на десятки и на единицы второго числа, потом сложи.' });
+    },
+    function () {
+      var a = rnd(100, 300), b = rnd(12, 29), tb = Math.floor(b / 10) * 10, ob = b % 10;
+      return num(a + ' × ' + b + ' = ?', a * b, a + ' × ' + tb + ' = ' + a * tb + ', ' + a + ' × ' + ob + ' = ' + a * ob + '. Сложим: ' + a * b, { hint: 'Умножай на десятки и единицы по отдельности.' });
+    },
+    function () { var a = rnd(12, 99), b = rnd(2, 9); return num(a + ' × ' + b * 10 + ' = ?', a * b * 10, a + ' × ' + b + ' = ' + a * b + ', потом дописываем ноль: ' + a * b * 10, { hint: 'Умножь на ' + b + ' и допиши ноль.' }); }
+  ]
+];
+
+/* ---------- ДЕЛЕНИЕ ---------- */
+function remTask(b, q, r) {
+  var n = b * q + r;
+  return num(n + ' : ' + b + ' = ?  (с остатком)', [q, r],
+    b + ' × ' + q + ' = ' + b * q + ' — ближайшее число, которое не больше ' + n + '. Остаток: ' + n + ' − ' + b * q + ' = ' + r + '. Остаток меньше делителя ' + b + '.',
+    { fields: [{ label: 'частное' }, { label: 'остаток' }], hint: 'Найди наибольшее число до ' + n + ', которое делится на ' + b + '. Разница и есть остаток.' });
+}
+var div = [
+  [
+    function () { var a = rnd(2, 9), b = rnd(2, 9); return num(a * b + ' : ' + b + ' = ?', a, b + ' × ' + a + ' = ' + a * b, { hint: 'Каким числом надо умножить ' + b + ', чтобы получить ' + a * b + '?' }); },
+    function () { var a = rnd(2, 9), b = rnd(2, 9); return num(a * b + ' : ? = ' + a, b, a * b + ' : ' + a + ' = ' + b, { hint: 'Неизвестный делитель = делимое : частное.' }); },
+    function () { var a = rnd(11, 99), d = pick([10, 100]); return num(a * d + ' : ' + d + ' = ?', a, 'Убираем ' + (d === 10 ? 'один ноль' : 'два нуля') + ' справа: ' + a, { hint: 'Зачеркни нули справа.' }); }
+  ],
+  [
+    function () { var b = rnd(3, 9); return remTask(b, rnd(3, 12), rnd(1, b - 1)); },
+    function () { var b = rnd(3, 9); return remTask(b, rnd(3, 12), rnd(1, b - 1)); },
+    function () { var b = rnd(2, 9), q = rnd(11, 40); return num(b * q + ' : ' + b + ' = ?', q, b + ' × ' + q + ' = ' + b * q, { hint: 'Дели по частям: десятки, потом единицы.' }); }
+  ],
+  [
+    function () { var b = rnd(3, 9); return remTask(b, rnd(20, 99), rnd(1, b - 1)); },
+    function () { var b = rnd(2, 9), q = rnd(100, 900); return num(b * q + ' : ' + b + ' = ?', q, 'Проверка: ' + b + ' × ' + q + ' = ' + b * q, { hint: 'Дели сначала сотни, потом десятки, потом единицы.' }); },
+    function () { var b = rnd(11, 29), q = rnd(10, 40); return num(b * q + ' : ' + b + ' = ?', q, 'Проверка: ' + b + ' × ' + q + ' = ' + b * q, { hint: 'Подбирай частное и проверяй умножением.' }); },
+    function () { var b = rnd(3, 15); return num('Какой наибольший остаток может получиться при делении на ' + b + '?', b - 1, 'Остаток всегда меньше делителя, значит наибольший — ' + (b - 1) + '.', { hint: 'Остаток должен быть меньше делителя.' }); },
+    function () {
+      var b = rnd(3, 9), q = rnd(3, 15), r = rnd(1, b - 1);
+      return num('? : ' + b + ' = ' + q + ' (остаток ' + r + ')', b * q + r, 'Делимое = частное × делитель + остаток: ' + q + ' × ' + b + ' + ' + r + ' = ' + (b * q + r), { hint: 'Делимое = частное × делитель + остаток.' });
+    }
+  ]
+];
+
+/* ---------- УРАВНЕНИЯ ---------- */
+var eq = [
+  [
+    function () { var a = rnd(11, 89), x = rnd(11, 89); return num(X + ' + ' + a + ' = ' + (a + x), x, 'Неизвестное слагаемое: ' + X + ' = ' + (a + x) + ' − ' + a + ' = ' + x, { fields: [{ label: 'x =' }], hint: 'Неизвестное слагаемое = сумма − известное слагаемое.' }); },
+    function () { var a = rnd(11, 89), b = rnd(11, 89); return num(X + ' − ' + a + ' = ' + b, a + b, 'Неизвестное уменьшаемое: ' + X + ' = ' + b + ' + ' + a + ' = ' + (a + b), { fields: [{ label: 'x =' }], hint: 'Уменьшаемое = разность + вычитаемое.' }); },
+    function () { var x = rnd(11, 89), b = rnd(11, 89); return num((x + b) + ' − ' + X + ' = ' + b, x, 'Неизвестное вычитаемое: ' + X + ' = ' + (x + b) + ' − ' + b + ' = ' + x, { fields: [{ label: 'x =' }], hint: 'Вычитаемое = уменьшаемое − разность.' }); }
+  ],
+  [
+    function () { var a = rnd(2, 9), x = rnd(3, 12); return num(a + ' × ' + X + ' = ' + a * x, x, 'Неизвестный множитель: ' + X + ' = ' + a * x + ' : ' + a + ' = ' + x, { fields: [{ label: 'x =' }], hint: 'Множитель = произведение : известный множитель.' }); },
+    function () { var a = rnd(2, 9), b = rnd(3, 15); return num(X + ' : ' + a + ' = ' + b, a * b, 'Неизвестное делимое: ' + X + ' = ' + b + ' × ' + a + ' = ' + a * b, { fields: [{ label: 'x =' }], hint: 'Делимое = частное × делитель.' }); },
+    function () { var b = rnd(2, 12), x = rnd(2, 9); return num(b * x + ' : ' + X + ' = ' + b, x, 'Неизвестный делитель: ' + X + ' = ' + b * x + ' : ' + b + ' = ' + x, { fields: [{ label: 'x =' }], hint: 'Делитель = делимое : частное.' }); },
+    function () { var a = rnd(101, 499), x = rnd(101, 499); return num(X + ' + ' + a + ' = ' + (a + x), x, X + ' = ' + (a + x) + ' − ' + a + ' = ' + x, { fields: [{ label: 'x =' }], hint: 'Слагаемое = сумма − другое слагаемое.' }); }
+  ],
+  [
+    function () {
+      var t = rnd(0, 2), a = rnd(358, 1900), x = rnd(401, 3000), b;
+      if (t === 0) return num(X + ' + ' + a + ' = ' + (a + x), x, X + ' = ' + (a + x) + ' − ' + a + ' = ' + x, { fields: [{ label: 'x =' }], hint: 'Слагаемое = сумма − слагаемое.' });
+      if (t === 1) { b = rnd(401, 3000); return num(X + ' − ' + a + ' = ' + b, a + b, X + ' = ' + b + ' + ' + a + ' = ' + (a + b), { fields: [{ label: 'x =' }], hint: 'Уменьшаемое = разность + вычитаемое.' }); }
+      b = rnd(401, 3000);
+      return num((x + b) + ' − ' + X + ' = ' + b, x, X + ' = ' + (x + b) + ' − ' + b + ' = ' + x, { fields: [{ label: 'x =' }], hint: 'Вычитаемое = уменьшаемое − разность.' });
+    },
+    function () {
+      var m = rnd(2, 9), x = rnd(3, 20), a = rnd(5, 60), b = m * x + a;
+      return num(m + ' × ' + X + ' + ' + a + ' = ' + b, x, m + ' × ' + X + ' = ' + b + ' − ' + a + ' = ' + (b - a) + '. ' + X + ' = ' + (b - a) + ' : ' + m + ' = ' + x, { fields: [{ label: 'x =' }], hint: 'Сначала найди, чему равно произведение, потом множитель.' });
+    },
+    function () {
+      var m = rnd(2, 9), x = rnd(5, 25), a = rnd(3, Math.min(60, m * x - 3)), b = m * x - a;
+      return num(m + ' × ' + X + ' − ' + a + ' = ' + b, x, m + ' × ' + X + ' = ' + b + ' + ' + a + ' = ' + (b + a) + '. ' + X + ' = ' + (b + a) + ' : ' + m + ' = ' + x, { fields: [{ label: 'x =' }], hint: 'Сначала найди уменьшаемое, потом множитель.' });
+    },
+    function () {
+      var m = rnd(2, 9), b = rnd(3, 15), tot = m * b, a = rnd(1, tot - 1), x = tot - a;
+      return num('(' + X + ' + ' + a + ') : ' + m + ' = ' + b, x, X + ' + ' + a + ' = ' + b + ' × ' + m + ' = ' + tot + '. ' + X + ' = ' + tot + ' − ' + a + ' = ' + x, { fields: [{ label: 'x =' }], hint: 'Сначала найди, чему равна сумма в скобках.' });
+    }
+  ]
+];
+
+/* ---------- ЗАДАЧИ ---------- */
+var word = [
+  [
+    function () { var a = rnd(40, 400), b = rnd(30, 300); return num('У игрока было ' + np(a, KR) + '. Он нашёл ещё ' + np(b, KR) + '. Сколько кристаллов у него стало?', a + b, a + ' + ' + b + ' = ' + (a + b), { hint: 'Нашёл ещё — значит, складываем.', unit: 'кристаллов' }); },
+    function () { var b = rnd(30, 300), a = b + rnd(50, 400); return num('В кладовой лежало ' + np(a, BL) + '. Для стройки взяли ' + np(b, BL) + '. Сколько блоков осталось?', a - b, a + ' − ' + b + ' = ' + (a - b), { hint: 'Взяли — значит, вычитаем.', unit: 'блоков' }); },
+    function () { var a = rnd(12, 45), k = rnd(2, 9); return num('В одном ящике ' + np(a, FK) + '. Сколько факелов в ' + k + ' таких ящиках?', a * k, a + ' × ' + k + ' = ' + a * k, { hint: 'Одинаковые части — умножаем.', unit: 'факелов' }); },
+    function () { var a = rnd(6, 40), k = rnd(2, 9); return num(np(a * k, BL) + ' разложили поровну в ' + np(k, YA) + '. Сколько блоков в одном ящике?', a, a * k + ' : ' + k + ' = ' + a, { hint: 'Поровну — значит, делим.', unit: 'блоков' }); },
+    function () { var a = rnd(5, 60), k = rnd(2, 9); return num('В первом сундуке ' + np(a, MN) + ', а во втором в ' + k + ' ' + pl(k, RZ) + ' больше. Сколько монет во втором сундуке?', a * k, 'В ' + k + ' ' + pl(k, RZ) + ' больше — умножаем: ' + a + ' × ' + k + ' = ' + a * k, { hint: 'В несколько раз больше — умножаем.', unit: 'монет' }); },
+    function () { var a = rnd(5, 6) * 10 + rnd(1, 9), d = rnd(12, 48); return num('В первом сундуке ' + np(a, MN) + ', а во втором на ' + d + ' монет больше. Сколько монет во втором сундуке?', a + d, 'На ' + d + ' больше — прибавляем: ' + a + ' + ' + d + ' = ' + (a + d), { hint: 'На несколько больше — прибавляем.', unit: 'монет' }); },
+    function () { var a = rnd(6, 30), k = rnd(2, 9); return num('В красной башне ' + np(a * k, BL) + ', а в синей — ' + np(a, BL) + '. Во сколько раз в красной башне блоков больше, чем в синей?', k, a * k + ' : ' + a + ' = ' + k, { hint: 'Во сколько раз больше — делим большее на меньшее.', unit: 'раз' }); }
+  ],
+  [
+    function () { var k = rnd(3, 9), a = rnd(24, 60), b = rnd(10, k * a - 5); return num('В магазине ' + np(k, NA) + ' с блоками. В каждом наборе ' + np(a, BL) + '. Из них ' + np(b, BL) + ' уже использовали. Сколько блоков осталось?', k * a - b, '1) ' + k + ' × ' + a + ' = ' + k * a + ' (всего). 2) ' + k * a + ' − ' + b + ' = ' + (k * a - b), { hint: 'Сначала узнай, сколько блоков всего.', unit: 'блоков' }); },
+    function () { var c = rnd(12, 60), d = rnd(20, 90), k = rnd(2, 9); return num('Один меч стоит ' + np(c, MN) + ', а щит — ' + np(d, MN) + '. Сколько монет нужно, чтобы купить ' + np(k, MC) + ' и один щит?', k * c + d, '1) ' + k + ' × ' + c + ' = ' + k * c + '. 2) ' + k * c + ' + ' + d + ' = ' + (k * c + d), { hint: 'Сначала найди цену всех мечей.', unit: 'монет' }); },
+    function () { var a = rnd(12, 80), k = rnd(2, 6); return num('В первый день игрок собрал ' + np(a, AL) + ', а во второй — в ' + k + ' ' + pl(k, RZ) + ' больше. Сколько алмазов он собрал за два дня?', a + a * k, '1) ' + a + ' × ' + k + ' = ' + a * k + ' (во второй день). 2) ' + a + ' + ' + a * k + ' = ' + (a + a * k), { hint: 'Сначала найди, сколько собрал во второй день.', unit: 'алмазов' }); },
+    function () { var a = rnd(40, 200), b = a + rnd(20, 150); return num('В двух сундуках вместе ' + np(a + b, MN) + '. В первом сундуке ' + np(a, MN) + '. На сколько монет во втором больше, чем в первом?', b - a, '1) ' + (a + b) + ' − ' + a + ' = ' + b + ' (во втором). 2) ' + b + ' − ' + a + ' = ' + (b - a), { hint: 'Сначала узнай, сколько монет во втором сундуке.', unit: 'монет' }); },
+    function () { var c = rnd(12, 40), k = rnd(3, 9), r = rnd(10, 90); return num('Один факел стоит ' + np(c, MN) + '. Игрок купил ' + np(k, FK) + ', и у него осталось ' + np(r, MN) + '. Сколько монет было у игрока сначала?', k * c + r, '1) ' + k + ' × ' + c + ' = ' + k * c + ' (потратил). 2) ' + k * c + ' + ' + r + ' = ' + (k * c + r), { hint: 'Сначала найди, сколько монет потратил.', unit: 'монет' }); },
+    function () { var a = rnd(10, 40), k = rnd(3, 9), d = rnd(2, a - 3); return num(np(a * k, BL) + ' поровну разложили в ' + np(k, YA) + ', а потом из каждого ящика достали ' + np(d, BL) + '. Сколько блоков осталось в одном ящике?', a - d, '1) ' + a * k + ' : ' + k + ' = ' + a + ' (в каждом). 2) ' + a + ' − ' + d + ' = ' + (a - d), { hint: 'Сначала узнай, сколько блоков в одном ящике.', unit: 'блоков' }); }
+  ],
+  [
+    function () { var a = rnd(8, 40), k = rnd(2, 8); return num('В двух ящиках вместе ' + np(a * (k + 1), BL) + '. В первом ящике в ' + k + ' ' + pl(k, RZ) + ' больше блоков, чем во втором. Сколько блоков в первом ящике?', a * k,
+      'Во втором 1 часть, в первом ' + k + ' ' + (k < 5 ? 'части' : 'частей') + ', всего ' + (k + 1) + '. 1) ' + a * (k + 1) + ' : ' + (k + 1) + ' = ' + a + ' (одна часть). 2) ' + a + ' × ' + k + ' = ' + a * k, { hint: 'Нарисуй схему: во втором ящике 1 часть, в первом несколько таких же.', unit: 'блоков' }); },
+    function () { var a = rnd(30, 150), d = rnd(10, 60); return num('В двух башнях вместе ' + np(2 * a + d, BL) + '. В одной на ' + np(d, BL) + ' больше, чем в другой. Сколько блоков в большей башне?', a + d,
+      '1) ' + (2 * a + d) + ' − ' + d + ' = ' + 2 * a + ' (если убрать лишние). 2) ' + 2 * a + ' : 2 = ' + a + ' (в меньшей). 3) ' + a + ' + ' + d + ' = ' + (a + d), { hint: 'Убери лишние блоки у большей башни — башни станут одинаковыми.', unit: 'блоков' }); },
+    function () { var h1 = rnd(2, 8), h2 = rnd(2, 9), per = rnd(6, 30); if (h2 === h1) h2 = h1 + 1; return num('За ' + np(h1, CH) + ' бригада выложила ' + np(per * h1, BL) + '. Сколько блоков она выложит за ' + np(h2, CH) + ' при той же скорости работы?', per * h2,
+      '1) ' + per * h1 + ' : ' + h1 + ' = ' + per + ' (блоков за час). 2) ' + per + ' × ' + h2 + ' = ' + per * h2, { hint: 'Сначала узнай, сколько блоков выкладывают за 1 час.', unit: 'блоков' }); },
+    function () { var c1 = rnd(12, 40), c2 = rnd(25, 80), k1 = rnd(2, 9), k2 = rnd(2, 6), cost = k1 * c1 + k2 * c2, pay = Math.ceil((cost + 1) / 100) * 100;
+      return num('Один факел стоит ' + np(c1, MN) + ', а один меч — ' + np(c2, MN) + '. Игрок купил ' + np(k1, FK) + ' и ' + np(k2, MC) + '. Сколько монет сдачи он получит, если заплатит ' + pay + ' монет?', pay - cost,
+        '1) ' + k1 + ' × ' + c1 + ' = ' + k1 * c1 + ' (факелы). 2) ' + k2 + ' × ' + c2 + ' = ' + k2 * c2 + ' (мечи). 3) ' + k1 * c1 + ' + ' + k2 * c2 + ' = ' + cost + ' (всего). 4) ' + pay + ' − ' + cost + ' = ' + (pay - cost), { hint: 'Найди стоимость факелов, потом мечей, потом общую стоимость.', unit: 'монет' }); }
+  ]
+];
+
+/* ---------- ПЕРИМЕТР И ПЛОЩАДЬ ---------- */
+var geo = [
+  [
+    function () { var w = rnd(4, 12), h = rnd(2, w - 1); return num('Найди периметр прямоугольника.', 2 * (w + h), 'P = (' + w + ' + ' + h + ') × 2 = ' + 2 * (w + h) + ' см', { fig: rectFig(w, h, w + ' см', h + ' см'), unit: 'см', hint: 'Периметр — сумма длин всех сторон.' }); },
+    function () { var w = rnd(4, 12), h = rnd(2, w - 1); return num('Найди площадь прямоугольника.', w * h, 'S = ' + w + ' × ' + h + ' = ' + w * h + ' см²', { fig: rectFig(w, h, w + ' см', h + ' см', true), unit: 'см²', hint: 'Площадь = длина × ширина.' }); },
+    function () { var a = rnd(3, 15); return num('Найди периметр квадрата.', 4 * a, 'P = ' + a + ' × 4 = ' + 4 * a + ' см', { fig: rectFig(a, a, a + ' см', ''), unit: 'см', hint: 'У квадрата все 4 стороны равны.' }); },
+    function () { var a = rnd(3, 12); return num('Найди площадь квадрата.', a * a, 'S = ' + a + ' × ' + a + ' = ' + a * a + ' см²', { fig: rectFig(a, a, a + ' см', '', true), unit: 'см²', hint: 'Площадь квадрата = сторона × сторона.' }); }
+  ],
+  [
+    function () { var w = rnd(5, 15), h = rnd(2, w - 1), P = 2 * (w + h); return num('Периметр прямоугольника ' + P + ' см. Одна сторона ' + w + ' см. Найди другую сторону.', h, '1) ' + P + ' : 2 = ' + P / 2 + ' (полупериметр). 2) ' + P / 2 + ' − ' + w + ' = ' + h, { fig: rectFig(w, h, w + ' см', '? см'), unit: 'см', hint: 'Раздели периметр на 2 — получишь сумму двух соседних сторон.' }); },
+    function () { var w = rnd(5, 15), h = rnd(2, w - 1), S = w * h; return num('Площадь прямоугольника ' + S + ' см². Одна сторона ' + w + ' см. Найди другую сторону.', h, S + ' : ' + w + ' = ' + h, { fig: rectFig(w, h, w + ' см', '? см'), unit: 'см', hint: 'Сторона = площадь : другая сторона.' }); },
+    function () { var w = rnd(8, 40), h = rnd(5, w - 1); return num('Участок прямоугольный: ' + w + ' м на ' + h + ' м. Сколько метров забора нужно, чтобы огородить его?', 2 * (w + h), 'Забор вокруг — это периметр: (' + w + ' + ' + h + ') × 2 = ' + 2 * (w + h), { fig: rectFig(w, h, w + ' м', h + ' м'), unit: 'м', hint: 'Забор идёт по всем сторонам.' }); },
+    function () {
+      var t = rnd(0, 1), k = rnd(2, 9);
+      if (t === 0) return num(k + ' дм² = ? см²', k * 100, '1 дм² = 100 см², поэтому ' + k + ' × 100 = ' + k * 100, { unit: 'см²', hint: '1 дм² = 100 см².' });
+      return num(k + ' м² = ? дм²', k * 100, '1 м² = 100 дм², поэтому ' + k + ' × 100 = ' + k * 100, { unit: 'дм²', hint: '1 м² = 100 дм².' });
+    }
+  ],
+  [
+    function () { var W = rnd(7, 12), H = rnd(6, 10), nw = rnd(2, W - 3), nh = rnd(2, H - 3); return num('Найди площадь фигуры.', W * H - nw * nh, 'Большой прямоугольник ' + W + ' × ' + H + ' = ' + W * H + '. Вырез ' + nw + ' × ' + nh + ' = ' + nw * nh + '. ' + W * H + ' − ' + nw * nh + ' = ' + (W * H - nw * nh), { fig: lFig(W, H, nw, nh), unit: 'см²', hint: 'Дострой фигуру до большого прямоугольника и вычти вырез.' }); },
+    function () { var W = rnd(7, 12), H = rnd(6, 10), nw = rnd(2, W - 3), nh = rnd(2, H - 3); return num('Найди периметр фигуры.', 2 * (W + H), 'Периметр такой фигуры равен периметру большого прямоугольника: (' + W + ' + ' + H + ') × 2 = ' + 2 * (W + H), { fig: lFig(W, H, nw, nh), unit: 'см', hint: 'Сдвинь вырезанные стороны к краям — получится большой прямоугольник.' }); },
+    function () { var a = rnd(3, 12); return num('Периметр квадрата ' + 4 * a + ' см. Найди его площадь.', a * a, '1) ' + 4 * a + ' : 4 = ' + a + ' (сторона). 2) ' + a + ' × ' + a + ' = ' + a * a, { unit: 'см²', hint: 'Сначала найди сторону квадрата.' }); },
+    function () { var a = rnd(3, 12); return num('Площадь квадрата ' + a * a + ' см². Найди его периметр.', 4 * a, '1) Сторона ' + a + ' см, потому что ' + a + ' × ' + a + ' = ' + a * a + '. 2) ' + a + ' × 4 = ' + 4 * a, { unit: 'см', hint: 'Подумай, какое число умножить само на себя даёт площадь.' }); },
+    function () { var w = rnd(3, 9), k = rnd(2, 4), l = w * k; return num('Ширина прямоугольника ' + w + ' см, а длина в ' + k + ' ' + pl(k, RZ) + ' больше. Найди периметр.', 2 * (w + l), '1) ' + w + ' × ' + k + ' = ' + l + ' (длина). 2) (' + w + ' + ' + l + ') × 2 = ' + 2 * (w + l), { fig: rectFig(l, w, '? см', w + ' см'), unit: 'см', hint: 'Сначала найди длину.' }); },
+    function () { var w = rnd(3, 9), k = rnd(2, 4), l = w * k; return num('Ширина прямоугольника ' + w + ' см, а длина в ' + k + ' ' + pl(k, RZ) + ' больше. Найди площадь.', w * l, '1) ' + w + ' × ' + k + ' = ' + l + ' (длина). 2) ' + w + ' × ' + l + ' = ' + w * l, { fig: rectFig(l, w, '? см', w + ' см'), unit: 'см²', hint: 'Сначала найди длину.' }); }
+  ]
+];
+
+/* ---------- ВЕЛИЧИНЫ ---------- */
+var CV = [['км', 'м', 1000], ['м', 'дм', 10], ['м', 'см', 100], ['дм', 'см', 10], ['см', 'мм', 10], ['т', 'кг', 1000], ['т', 'ц', 10], ['ц', 'кг', 100], ['кг', 'г', 1000], ['ч', 'мин', 60], ['мин', 'с', 60], ['сут', 'ч', 24], ['год', 'мес', 12]];
+var CV2 = CV.filter(function (c) { return c[0] !== 'год' && !(c[0] === 'т' && c[1] === 'ц'); });
+function tm(h, m) { return h + ':' + (m < 10 ? '0' : '') + m; }
+function partB(f) { if (f === 1000) return rnd(1, 19) * 50; if (f === 100) return rnd(1, 19) * 5; if (f === 60) return rnd(1, 11) * 5; return rnd(1, f - 1); }
+var units = [
+  [
+    function () { var c = pick(CV), k = rnd(2, 9); return num(k + ' ' + c[0] + ' = ? ' + c[1], k * c[2], '1 ' + c[0] + ' = ' + c[2] + ' ' + c[1] + ', значит ' + k + ' × ' + c[2] + ' = ' + k * c[2], { unit: c[1], hint: '1 ' + c[0] + ' = ' + c[2] + ' ' + c[1] + '. Умножай.' }); },
+    function () { var c = pick(CV), k = rnd(2, 9); return num(k * c[2] + ' ' + c[1] + ' = ? ' + c[0], k, k * c[2] + ' : ' + c[2] + ' = ' + k, { unit: c[0], hint: '1 ' + c[0] + ' = ' + c[2] + ' ' + c[1] + '. Дели.' }); }
+  ],
+  [
+    function () { var c = pick(CV2), a = rnd(2, 9), b = partB(c[2]); return num(a + ' ' + c[0] + ' ' + b + ' ' + c[1] + ' = ? ' + c[1], a * c[2] + b, a + ' ' + c[0] + ' = ' + a * c[2] + ' ' + c[1] + '. ' + a * c[2] + ' + ' + b + ' = ' + (a * c[2] + b), { unit: c[1], hint: 'Переведи большие единицы в мелкие и сложи.' }); },
+    function () { var c = pick(CV2), a = rnd(2, 9), b = partB(c[2]); return num((a * c[2] + b) + ' ' + c[1] + ' = ? ' + c[0] + ' ? ' + c[1], [a, b], (a * c[2] + b) + ' : ' + c[2] + ' = ' + a + ' (остаток ' + b + ')', { fields: [{ unit: c[0] }, { unit: c[1] }], hint: 'Раздели на ' + c[2] + ': частное — большие единицы, остаток — мелкие.' }); },
+    function () { var c = pick(CV2), a = rnd(2, 9), b = partB(c[2]); return num(a + ' ' + c[0] + ' ' + b + ' ' + c[1] + ' = ? ' + c[1], a * c[2] + b, a + ' ' + c[0] + ' = ' + a * c[2] + ' ' + c[1] + '. ' + a * c[2] + ' + ' + b + ' = ' + (a * c[2] + b), { unit: c[1], hint: 'Переведи большие единицы в мелкие и сложи.' }); }
+  ],
+  [
+    function () {
+      var h = rnd(8, 17), m = rnd(0, 11) * 5, d = rnd(25, 170), e = h * 60 + m + d, eh = Math.floor(e / 60), em = e % 60;
+      return num('Фильм начался в ' + tm(h, m) + ' и шёл ' + Math.floor(d / 60) + ' ч ' + d % 60 + ' мин. Во сколько он закончился?', [eh, em], tm(h, m) + ' + ' + Math.floor(d / 60) + ' ч ' + d % 60 + ' мин = ' + tm(eh, em), { fields: [{ label: 'часы' }, { label: 'минуты' }], hint: 'Сначала прибавь часы, потом минуты. Если минут стало больше 60 — добавь час.' });
+    },
+    function () {
+      var h = rnd(8, 14), m = rnd(0, 11) * 5, d = rnd(35, 175), e = h * 60 + m + d;
+      return num('Занятие началось в ' + tm(h, m) + ' и закончилось в ' + tm(Math.floor(e / 60), e % 60) + '. Сколько минут оно шло?', d, 'От ' + tm(h, m) + ' до ' + tm(Math.floor(e / 60), e % 60) + ': ' + d + ' мин', { unit: 'мин', hint: 'Дойди до ближайшего целого часа, потом добавь остальное.' });
+    },
+    function () {
+      var a = rnd(2, 9), b = rnd(10, 90), A = a * 1000 + b, d = pick([0, 0, 100, -100, 10, -10, 1000]), B = A + d;
+      var s = A > B ? '>' : (A < B ? '<' : '=');
+      return ch('Сравни: ' + a + ' км ' + b + ' м ○ ' + B + ' м', ['>', '<', '='], s, a + ' км ' + b + ' м = ' + A + ' м. Сравниваем ' + A + ' и ' + B + '.', { hint: 'Переведи всё в метры.' });
+    },
+    function () { var a = rnd(1, 9), b = rnd(1, 9), c = rnd(1, 9); return num(a + ' м ' + b + ' дм ' + c + ' см = ? см', a * 100 + b * 10 + c, a + ' м = ' + a * 100 + ' см, ' + b + ' дм = ' + b * 10 + ' см. ' + a * 100 + ' + ' + b * 10 + ' + ' + c + ' = ' + (a * 100 + b * 10 + c), { unit: 'см', hint: 'Переведи всё в сантиметры и сложи.' }); },
+    function () { var a = rnd(2, 9), b = rnd(5, 55); return num('Сколько секунд в ' + a + ' мин ' + b + ' с?', a * 60 + b, a + ' × 60 = ' + a * 60 + ', ' + a * 60 + ' + ' + b + ' = ' + (a * 60 + b), { unit: 'с', hint: 'В 1 минуте 60 секунд.' }); }
+  ]
+];
+
+/* ---------- ПОРЯДОК ДЕЙСТВИЙ ---------- */
+var ORD = 'Сначала скобки, потом × и : слева направо, в конце + и −. ';
+var order = [
+  [
+    function () { var a = rnd(10, 60), b = rnd(2, 9), c = rnd(2, 9); return num(a + ' + ' + b + ' × ' + c + ' = ?', a + b * c, ORD + '1) ' + b + ' × ' + c + ' = ' + b * c + '. 2) ' + a + ' + ' + b * c + ' = ' + (a + b * c), { hint: 'Умножение выполняется раньше сложения.' }); },
+    function () { var b = rnd(2, 9), c = rnd(2, 9), a = b * c + rnd(5, 40); return num(a + ' − ' + b + ' × ' + c + ' = ?', a - b * c, ORD + '1) ' + b + ' × ' + c + ' = ' + b * c + '. 2) ' + a + ' − ' + b * c + ' = ' + (a - b * c), { hint: 'Умножение выполняется раньше вычитания.' }); },
+    function () { var c = rnd(2, 9), k = rnd(2, 9), a = rnd(10, 60); return num(a + ' + ' + c * k + ' : ' + c + ' = ?', a + k, ORD + '1) ' + c * k + ' : ' + c + ' = ' + k + '. 2) ' + a + ' + ' + k + ' = ' + (a + k), { hint: 'Деление выполняется раньше сложения.' }); },
+    function () { var a = rnd(3, 9), b = rnd(3, 9), c = rnd(2, a * b - 2); return num(a + ' × ' + b + ' − ' + c + ' = ?', a * b - c, '1) ' + a + ' × ' + b + ' = ' + a * b + '. 2) ' + a * b + ' − ' + c + ' = ' + (a * b - c), { hint: 'Сначала умножение.' }); }
+  ],
+  [
+    function () { var a = rnd(10, 60), b = rnd(10, 60), c = rnd(2, 9); return num('(' + a + ' + ' + b + ') × ' + c + ' = ?', (a + b) * c, '1) ' + a + ' + ' + b + ' = ' + (a + b) + '. 2) ' + (a + b) + ' × ' + c + ' = ' + (a + b) * c, { hint: 'Скобки выполняются первыми.' }); },
+    function () { var c = rnd(2, 9), k = rnd(3, 12), b = rnd(10, 60), a = b + c * k; return num('(' + a + ' − ' + b + ') : ' + c + ' = ?', k, '1) ' + a + ' − ' + b + ' = ' + (a - b) + '. 2) ' + (a - b) + ' : ' + c + ' = ' + k, { hint: 'Скобки выполняются первыми.' }); },
+    function () { var a = rnd(3, 9), b = rnd(3, 9), c = rnd(3, 9), d = rnd(3, 9); return num(a + ' × ' + b + ' + ' + c + ' × ' + d + ' = ?', a * b + c * d, '1) ' + a + ' × ' + b + ' = ' + a * b + '. 2) ' + c + ' × ' + d + ' = ' + c * d + '. 3) ' + a * b + ' + ' + c * d + ' = ' + (a * b + c * d), { hint: 'Сначала оба умножения.' }); },
+    function () {
+      var a = rnd(10, 40), b = rnd(2, 9), c = rnd(2, 9), e = rnd(2, 9), k = rnd(2, 9), d = e * k, first = b + ' × ' + c;
+      return ch('Какое действие выполняется первым?  ' + a + ' + ' + b + ' × ' + c + ' − ' + d + ' : ' + e, shuffle([a + ' + ' + b, first, c + ' − ' + d, d + ' : ' + e]), first, ORD + 'Умножение и деление идут слева направо: первым стоит ' + first + '.', { hint: 'Сначала × и :, слева направо.' });
+    },
+    function () {
+      var tri = shuffle([2, 3, 4, 5, 6, 7, 8, 9]), a = tri[0], b = tri[1], c = tri[2], d = rnd(10, 20), first = b + ' + ' + c;
+      return ch('Какое действие выполняется первым?  ' + a + ' × (' + b + ' + ' + c + ') − ' + d, shuffle([a + ' × ' + b, first, c + ' − ' + d, a + ' × ' + c]), first, 'Скобки выполняются первыми.', { hint: 'Что в скобках — считаем первым.' });
+    }
+  ],
+  [
+    function () { var e = rnd(2, 9), k = rnd(3, 9), s = e * k, c = rnd(1, s - 1), d = s - c, a = rnd(5, 12), b = rnd(5, 12); return num(a + ' × ' + b + ' − (' + c + ' + ' + d + ') : ' + e + ' = ?', a * b - k, '1) ' + c + ' + ' + d + ' = ' + s + '. 2) ' + s + ' : ' + e + ' = ' + k + '. 3) ' + a + ' × ' + b + ' = ' + a * b + '. 4) ' + a * b + ' − ' + k + ' = ' + (a * b - k), { hint: 'Сначала скобки, потом × и :, потом −.' }); },
+    function () { var a = rnd(5, 25), b = rnd(5, 25), c = rnd(2, 9), d = rnd(2, 9), e = rnd(2, 9), r = (a + b) * c - d * e; while (r < 1) { a += 15; r = (a + b) * c - d * e; } return num('(' + a + ' + ' + b + ') × ' + c + ' − ' + d + ' × ' + e + ' = ?', r, '1) ' + a + ' + ' + b + ' = ' + (a + b) + '. 2) ' + (a + b) + ' × ' + c + ' = ' + (a + b) * c + '. 3) ' + d + ' × ' + e + ' = ' + d * e + '. 4) ' + (a + b) * c + ' − ' + d * e + ' = ' + r, { hint: 'Скобки, затем умножения, затем вычитание.' }); },
+    function () { var c = rnd(2, 9), q = rnd(2, 9), d = rnd(2, 6), a = q * d + rnd(5, 40), b = c * q; return num(a + ' − ' + b + ' : ' + c + ' × ' + d + ' = ?', a - q * d, '1) ' + b + ' : ' + c + ' = ' + q + '. 2) ' + q + ' × ' + d + ' = ' + q * d + '. 3) ' + a + ' − ' + q * d + ' = ' + (a - q * d), { hint: '× и : выполняем слева направо, потом вычитаем.' }); },
+    function () { var d = rnd(2, 9), j = rnd(2, 9), a = d * j, m = rnd(2, 9), c = rnd(2, 20), b = c + m; return num(a + ' × (' + b + ' − ' + c + ') : ' + d + ' = ?', j * m, '1) ' + b + ' − ' + c + ' = ' + m + '. 2) ' + a + ' × ' + m + ' = ' + a * m + '. 3) ' + a * m + ' : ' + d + ' = ' + j * m, { hint: 'Скобки, потом слева направо.' }); }
+  ]
+];
+
+/* ---------- БОЛЬШИЕ ЧИСЛА ---------- */
+var RN = [['десятков', 10], ['сотен', 100], ['тысяч', 1000]];
+var big = [
+  [
+    function () { var n = rnd(1100, 9990); return num('Сколько всего сотен в числе ' + fmt(n) + '?', Math.floor(n / 100), 'Отбрасываем две последние цифры: ' + Math.floor(n / 100), { hint: 'В одной сотне 100 единиц. Сколько раз по 100 поместится в числе?' }); },
+    function () { var m = pick([999, 9999, 99999, 5999, 19999, 49999, 899999]); return num('Какое число следует за числом ' + fmt(m) + '?', m + 1, fmt(m) + ' + 1 = ' + fmt(m + 1), { hint: 'Прибавь 1.' }); },
+    function () { var n = pick([1000, 10000, 100000, 5000, 20000, 300000]); return num('Какое число стоит перед числом ' + fmt(n) + '?', n - 1, fmt(n) + ' − 1 = ' + fmt(n - 1), { hint: 'Отними 1.' }); },
+    function () { var a = rnd(11, 90) * 100, b = rnd(11, 90) * 100; return num(fmt(a) + ' + ' + fmt(b) + ' = ?', a + b, a / 100 + ' сотен + ' + b / 100 + ' сотен = ' + (a + b) / 100 + ' сотен = ' + fmt(a + b), { hint: 'Сложи сотни, потом допиши два нуля.' }); }
+  ],
+  [
+    function () { var a = rnd(1200, 49999), b = rnd(1100, 49999); return num(fmt(a) + ' + ' + fmt(b) + ' = ?', a + b, 'Складываем столбиком: ' + fmt(a + b), { hint: 'Пиши столбиком, разряд под разрядом.' }); },
+    function () { var b = rnd(1100, 49999), a = b + rnd(1100, 49999); return num(fmt(a) + ' − ' + fmt(b) + ' = ?', a - b, 'Вычитаем столбиком: ' + fmt(a - b), { hint: 'Пиши столбиком. Если не хватает, занимай из соседнего разряда.' }); },
+    function () { var r = pick(RN.slice(1)), n = rnd(1234, 9876); return num('Округли число ' + fmt(n) + ' до ' + (r[1] === 100 ? 'сотен' : 'тысяч') + '.', Math.round(n / r[1]) * r[1], 'Смотрим на цифру справа: если она 5 или больше — округляем вверх. Получилось ' + fmt(Math.round(n / r[1]) * r[1]), { hint: 'Если следующая цифра 0–4 — вниз, если 5–9 — вверх.' }); }
+  ],
+  [
+    function () { var a = rnd(120000, 489999), b = rnd(110000, 489999); return num(fmt(a) + ' + ' + fmt(b) + ' = ?', a + b, 'Складываем столбиком: ' + fmt(a + b), { hint: 'Складывай столбиком, справа налево.' }); },
+    function () { var b = rnd(110000, 489999), a = b + rnd(11000, 489999); return num(fmt(a) + ' − ' + fmt(b) + ' = ?', a - b, 'Вычитаем столбиком: ' + fmt(a - b), { hint: 'Вычитай столбиком, справа налево.' }); },
+    function () { var t = rnd(11, 989), r = rnd(11, 989); return num('Запиши цифрами: ' + t + ' тысяч ' + r, t * 1000 + r, t + ' тыс. = ' + t + ' 000, плюс ' + r + ' = ' + fmt(t * 1000 + r) + '. Если не хватает цифр — дописывай нули.', { hint: 'Класс единиц — три цифры. Если число короче, поставь нули слева.' }); },
+    function () { var n = rnd(110000, 989999); return num('Сколько всего тысяч в числе ' + fmt(n) + '?', Math.floor(n / 1000), 'Отбрасываем последние три цифры: ' + Math.floor(n / 1000), { hint: 'Закрой три последние цифры.' }); },
+    function () { var a = rnd(10000, 99990), d = pick([1, 9, 10, 100, -10, -1]), b = a + d, s = a > b ? '>' : (a < b ? '<' : '='); return ch('Поставь знак: ' + fmt(a) + ' ○ ' + fmt(b), ['>', '<', '='], s, 'Сравниваем разряды слева направо, пока цифры не разойдутся.', { hint: 'Сравнивай цифры слева направо.' }); }
+  ]
+];
+
+/* ---------- ДОЛИ ---------- */
+var DEN = [2, 3, 4, 5, 6, 8, 10];
+var frc = [
+  [
+    function () { var n = pick(DEN), k = rnd(3, 15); return num('Найди ' + frac(1, n) + ' от числа ' + n * k + '.', k, n * k + ' : ' + n + ' = ' + k, { hint: 'Одна ' + n + '-я часть — это деление на ' + n + '.' }); },
+    function () { var n = pick([2, 3, 4, 5, 10]), k = rnd(4, 20); return num('Найди ' + frac(1, n) + ' от числа ' + n * k + '.', k, n * k + ' : ' + n + ' = ' + k, { hint: 'Раздели на ' + n + ' равных частей.' }); },
+    function () { var t = pick([[2, 30], [4, 15], [3, 20], [6, 10], [10, 6]]); return num('Сколько минут в ' + frac(1, t[0]) + ' часа?', t[1], '60 : ' + t[0] + ' = ' + t[1], { unit: 'мин', hint: 'В часе 60 минут.' }); }
+  ],
+  [
+    function () { var n = pick([3, 4, 5, 6, 8, 10]), a = rnd(2, n - 1), k = rnd(3, 12); return num('Найди ' + frac(a, n) + ' от числа ' + n * k + '.', a * k, '1) ' + n * k + ' : ' + n + ' = ' + k + ' (одна доля). 2) ' + k + ' × ' + a + ' = ' + a * k, { hint: 'Найди одну долю, потом возьми ' + a + ' таких долей.' }); },
+    function () { var n = pick(DEN), k = rnd(3, 15); return num(frac(1, n) + ' числа равна ' + k + '. Найди число.', n * k, 'Целое состоит из ' + n + ' долей: ' + k + ' × ' + n + ' = ' + n * k, { hint: 'Если одна доля известна, умножь её на число долей.' }); },
+    function () { var n = pick([3, 4, 5, 6, 8, 10]), a = rnd(2, n - 1), k = rnd(3, 12); return num(frac(a, n) + ' числа равны ' + a * k + '. Найди число.', n * k, '1) ' + a * k + ' : ' + a + ' = ' + k + ' (одна доля). 2) ' + k + ' × ' + n + ' = ' + n * k, { hint: 'Найди одну долю, потом всё число.' }); }
+  ],
+  [
+    function () { var a = rnd(1, 3), p = rnd(0, 1); if (p === 0) return num(frac(a, 4) + ' ч = ? мин', a * 15, '60 : 4 = 15, ' + a + ' × 15 = ' + a * 15, { unit: 'мин', hint: 'Четверть часа — 15 минут.' }); return num(frac(a, 5) + ' м = ? см', a * 20, '100 : 5 = 20, ' + a + ' × 20 = ' + a * 20, { unit: 'см', hint: 'В метре 100 см.' }); },
+    function () { var a = rnd(1, 9); return num(frac(a, 10) + ' кг = ? г', a * 100, '1000 : 10 = 100, ' + a + ' × 100 = ' + a * 100, { unit: 'г', hint: 'В килограмме 1000 г.' }); },
+    function () { var a = rnd(1, 3); return num(frac(a, 4) + ' суток = ? ч', a * 6, '24 : 4 = 6, ' + a + ' × 6 = ' + a * 6, { unit: 'ч', hint: 'В сутках 24 часа.' }); },
+    function () { var d = pick([5, 7, 8, 9, 10]), a = rnd(1, d - 1), b = rnd(1, d - 1); while (b === a) b = rnd(1, d - 1); return ch('Сравни: ' + frac(a, d) + ' ○ ' + frac(b, d), ['>', '<', '='], a > b ? '>' : '<', 'Знаменатели одинаковые, значит, больше та дробь, у которой числитель больше.', { hint: 'Знаменатели равны — смотри на числители.' }); },
+    function () { var n = pick([4, 6, 8]), k = rnd(2, 5); return num('Пиццу разрезали на ' + n + ' равных долей. Сколько долей в ' + k + ' таких пиццах?', n * k, n + ' × ' + k + ' = ' + n * k, { unit: 'долей', hint: 'В каждой пицце одинаковое число долей.' }); }
+  ]
+];
+
+/* ---------- СКОРОСТЬ ---------- */
+var speed = [
+  [
+    function () { var v = rnd(30, 90), t = rnd(2, 9); return num('Машина едет со скоростью ' + v + ' км/ч. Какой путь она проедет за ' + t + ' ч?', v * t, 'S = v × t = ' + v + ' × ' + t + ' = ' + v * t, { unit: 'км', hint: 'Путь = скорость × время.' }); },
+    function () { var v = rnd(30, 90), t = rnd(2, 9); return num('Поезд прошёл ' + v * t + ' км за ' + t + ' ч. С какой скоростью он ехал?', v, 'v = S : t = ' + v * t + ' : ' + t + ' = ' + v, { unit: 'км/ч', hint: 'Скорость = путь : время.' }); },
+    function () { var v = rnd(4, 9) * 10, t = rnd(2, 9); return num('Мотоцикл едет со скоростью ' + v + ' км/ч. За сколько часов он проедет ' + v * t + ' км?', t, 't = S : v = ' + v * t + ' : ' + v + ' = ' + t, { unit: 'ч', hint: 'Время = путь : скорость.' }); }
+  ],
+  [
+    function () { var v1 = rnd(40, 90), v2 = rnd(40, 90), t = rnd(2, 9); return num('Два игрока выбежали навстречу друг другу. Скорость первого ' + v1 + ' м/мин, второго — ' + v2 + ' м/мин. Через сколько минут они встретятся, если между ними ' + (v1 + v2) * t + ' м?', t, '1) ' + v1 + ' + ' + v2 + ' = ' + (v1 + v2) + ' м/мин (скорость сближения). 2) ' + (v1 + v2) * t + ' : ' + (v1 + v2) + ' = ' + t, { unit: 'мин', hint: 'Сначала сложи скорости — это скорость сближения.' }); },
+    function () { var v1 = rnd(40, 90), v2 = rnd(40, 90), t = rnd(2, 9); return num('Два велосипедиста выехали из одного места в противоположные стороны со скоростями ' + v1 + ' км/ч и ' + v2 + ' км/ч. Какое расстояние будет между ними через ' + t + ' ч?', (v1 + v2) * t, '1) ' + v1 + ' + ' + v2 + ' = ' + (v1 + v2) + ' км/ч (скорость удаления). 2) ' + (v1 + v2) + ' × ' + t + ' = ' + (v1 + v2) * t, { unit: 'км', hint: 'Скорости складываем: они удаляются друг от друга.' }); },
+    function () { var v1 = rnd(40, 90), v2 = rnd(40, 90); return num('Игроки идут навстречу друг другу со скоростями ' + v1 + ' м/мин и ' + v2 + ' м/мин. Чему равна скорость сближения?', v1 + v2, v1 + ' + ' + v2 + ' = ' + (v1 + v2) + ' м/мин', { unit: 'м/мин', hint: 'Скорость сближения при встречном движении — сумма скоростей.' }); }
+  ],
+  [
+    function () { var v2 = rnd(40, 80), d = rnd(5, 20), t = rnd(3, 9); return num('Игрок бежит со скоростью ' + (v2 + d) + ' м/мин вдогонку за другим, который бежит со скоростью ' + v2 + ' м/мин. Сейчас между ними ' + d * t + ' м. Через сколько минут первый догонит второго?', t, '1) ' + (v2 + d) + ' − ' + v2 + ' = ' + d + ' м/мин (скорость сближения). 2) ' + d * t + ' : ' + d + ' = ' + t, { unit: 'мин', hint: 'При движении вдогонку скорости вычитаем.' }); },
+    function () { var v1 = rnd(40, 90), v2 = rnd(40, 90), t1 = rnd(2, 5), t2 = rnd(2, 5); return num('Сначала автобус ехал ' + t1 + ' ч со скоростью ' + v1 + ' км/ч, потом ' + t2 + ' ч со скоростью ' + v2 + ' км/ч. Какой путь он проехал за всё время?', v1 * t1 + v2 * t2, '1) ' + v1 + ' × ' + t1 + ' = ' + v1 * t1 + '. 2) ' + v2 + ' × ' + t2 + ' = ' + v2 * t2 + '. 3) ' + v1 * t1 + ' + ' + v2 * t2 + ' = ' + (v1 * t1 + v2 * t2), { unit: 'км', hint: 'Найди путь на каждом участке и сложи.' }); },
+    function () { var avg = rnd(4, 9) * 10, d = rnd(1, 4) * 5, t = rnd(2, 5); return num('Первые ' + t + ' ч поезд ехал со скоростью ' + (avg + d) + ' км/ч, следующие ' + t + ' ч — со скоростью ' + (avg - d) + ' км/ч. Какова средняя скорость поезда?', avg, '1) Путь: ' + (avg + d) + ' × ' + t + ' + ' + (avg - d) + ' × ' + t + ' = ' + 2 * avg * t + '. 2) Время: ' + 2 * t + ' ч. 3) ' + 2 * avg * t + ' : ' + 2 * t + ' = ' + avg, { unit: 'км/ч', hint: 'Средняя скорость = весь путь : всё время.' }); },
+    function () { var t1 = rnd(2, 4), t2 = rnd(2, 4), v1 = rnd(40, 70), T = t1 + t2, avg = rnd(Math.floor(v1 * t1 / T) + 5, Math.floor(v1 * t1 / T) + 40), s2 = avg * T - v1 * t1; return num('Автобус ехал ' + t1 + ' ч со скоростью ' + v1 + ' км/ч, а потом ещё ' + t2 + ' ч. Всего он проехал ' + avg * T + ' км. Сколько километров он проехал за последние ' + t2 + ' ч?', s2, '1) ' + v1 + ' × ' + t1 + ' = ' + v1 * t1 + ' км (первый участок). 2) ' + avg * T + ' − ' + v1 * t1 + ' = ' + s2, { unit: 'км', hint: 'Из всего пути вычти путь на первом участке.' }); }
+  ]
+];
+
+/* ---------- ВПР ---------- */
+var DAYS = ['понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота', 'воскресенье'];
+function barTask(kind) {
+  var labels = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт'], vals, mx, mn, tries = 0;
+  do { vals = labels.map(function () { return rnd(1, 6) * 10; }); mx = Math.max.apply(null, vals); mn = Math.min.apply(null, vals); tries++; }
+  while ((vals.filter(function (v) { return v === mx; }).length > 1 || vals.filter(function (v) { return v === mn; }).length > 1) && tries < 200);
+  if (tries >= 200) { vals = [30, 10, 50, 20, 40]; mx = 50; mn = 10; }
+  var fig = barFig(labels, vals);
+  if (kind === 0) return num('На диаграмме показано, сколько блоков построили за 5 дней. На сколько блоков больше построили в самый удачный день, чем в самый слабый?', mx - mn, 'Больше всего: ' + mx + ', меньше всего: ' + mn + '. ' + mx + ' − ' + mn + ' = ' + (mx - mn), { fig: fig, unit: 'блоков', hint: 'Найди самый высокий и самый низкий столбики по шкале слева.' });
+  return num('На диаграмме показано, сколько блоков построили за 5 дней. Сколько блоков построили за первые три дня (Пн, Вт, Ср)?', vals[0] + vals[1] + vals[2], vals[0] + ' + ' + vals[1] + ' + ' + vals[2] + ' = ' + (vals[0] + vals[1] + vals[2]), { fig: fig, unit: 'блоков', hint: 'Считай высоту столбиков по шкале слева.' });
+}
+var vpr = [
+  [
+    function () { var m = rnd(3, 9), x = rnd(3, 12); return num('Я задумал число, умножил его на ' + m + ' и получил ' + m * x + '. Какое число я задумал?', x, m * x + ' : ' + m + ' = ' + x, { hint: 'Сделай обратное действие: раздели.' }); },
+    function () { var h = rnd(9, 15), m = rnd(0, 11) * 5, d = rnd(25, 95), e = h * 60 + m + d; return num('Урок начался в ' + tm(h, m) + ' и закончился в ' + tm(Math.floor(e / 60), e % 60) + '. Сколько минут длился урок?', d, 'От ' + tm(h, m) + ' до ' + tm(Math.floor(e / 60), e % 60) + ' прошло ' + d + ' мин', { unit: 'мин', hint: 'Дойди до целого часа, потом добавь остальное.' }); },
+    function () {
+      var s = rnd(0, 6), n = pick([10, 17, 24, 31, 45]), r = DAYS[(s + n) % 7], o = [r], i;
+      for (i = 0; o.length < 4; i++) { var d = DAYS[rnd(0, 6)]; if (o.indexOf(d) < 0) o.push(d); }
+      return ch('Сегодня ' + DAYS[s] + '. Какой день недели будет через ' + n + ' дней?', shuffle(o), r, 'В неделе 7 дней. ' + n + ' = ' + Math.floor(n / 7) + ' × 7 + ' + n % 7 + '. Значит, надо сдвинуться на ' + n % 7 + ' дн. вперёд: ' + r + '.', { hint: 'Недели не меняют день недели. Считай только остаток от деления на 7.' });
+    }
+  ],
+  [
+    function () { var m = rnd(2, 9), a = rnd(5, 40), x = rnd(3, 15); return num('Задумали число, увеличили его в ' + m + ' ' + pl(m, RZ) + ', прибавили ' + a + ' и получили ' + (m * x + a) + '. Какое число задумали?', x, 'Идём с конца: ' + (m * x + a) + ' − ' + a + ' = ' + m * x + ', ' + m * x + ' : ' + m + ' = ' + x, { hint: 'Выполни обратные действия с конца.' }); },
+    function () {
+      var a = rnd(12, 98), b = rnd(3, 9), p = a * b, s = String(a), hide = rnd(0, 1), digit = Number(s[hide]), t = hide === 0 ? '?' + s[1] : s[0] + '?';
+      return num('Вставь пропущенную цифру: ' + t + ' × ' + b + ' = ' + p, digit, 'Первый множитель: ' + p + ' : ' + b + ' = ' + a, { hint: 'Раздели произведение на известный множитель.' });
+    },
+    function () { return barTask(0); },
+    function () { return barTask(1); },
+    function () { var a = rnd(2, 30), d = rnd(3, 12); return num('Продолжи ряд: ' + [0, 1, 2, 3, 4].map(function (i) { return a + d * i; }).join(', ') + ', ?', a + 5 * d, 'Каждое число больше предыдущего на ' + d + '. ' + (a + 4 * d) + ' + ' + d + ' = ' + (a + 5 * d), { hint: 'Найди, на сколько растёт каждое следующее число.' }); },
+    function () { var a = rnd(1, 5), k = pick([2, 3]); return num('Продолжи ряд: ' + [0, 1, 2, 3].map(function (i) { return a * Math.pow(k, i); }).join(', ') + ', ?', a * Math.pow(k, 4), 'Каждое число больше предыдущего в ' + k + ' ' + pl(k, RZ) + '. ' + a * Math.pow(k, 3) + ' × ' + k + ' = ' + a * Math.pow(k, 4), { hint: 'Во сколько раз растёт каждое следующее число?' }); }
+  ],
+  [
+    function () { var m = rnd(2, 9), a = rnd(3, 30), x = rnd(a + 2, 30); return num('Задумали число, вычли из него ' + a + ', результат умножили на ' + m + ' и получили ' + m * (x - a) + '. Какое число задумали?', x, 'Идём с конца: ' + m * (x - a) + ' : ' + m + ' = ' + (x - a) + ', ' + (x - a) + ' + ' + a + ' = ' + x, { hint: 'Выполни обратные действия, начиная с конца.' }); },
+    function () {
+      var n = pick([2, 3]), parts = [], total = 0, k;
+      for (k = 1; k <= n; k++) { parts.push((n - k + 1) * (n - k + 1) + ' (' + k + '×' + k + ')'); total += (n - k + 1) * (n - k + 1); }
+      return num('Сколько всего квадратов (любых размеров) на рисунке?', total, 'Считаем по размерам: ' + parts.join(' + ') + ' = ' + total, { fig: gridFig(n), unit: 'квадратов', hint: 'Считай отдельно маленькие квадраты, потом квадраты побольше, потом весь большой.' });
+    },
+    function () {
+      var c = rnd(0, 3), t = [1, 2, 3, 4].map(function (n) { return n * n + c; }), nx = 25 + c;
+      return num('Продолжи ряд: ' + t.join(', ') + ', ?', nx, 'Разности: ' + (t[1] - t[0]) + ', ' + (t[2] - t[1]) + ', ' + (t[3] - t[2]) + ' — растут на 2. Следующая разность 9: ' + t[3] + ' + 9 = ' + nx, { hint: 'Посмотри, на сколько растёт каждое число. Сама разность тоже растёт.' });
+    },
+    function () { return barTask(rnd(0, 1)); }
+  ]
+];
+vpr[2] = vpr[2].concat(word[2].slice(0, 2));
+vpr[1] = vpr[1].concat([word[1][0], word[1][3]]);
+
+/* ---------- БЫСТРЫЙ РАУНД ---------- */
+function blitz() {
+  var t = rnd(0, 4), a, b;
+  if (t <= 1) { a = rnd(2, 9); b = rnd(2, 9); return num(a + ' × ' + b, a * b, '', { hint: '' }); }
+  if (t === 2) { a = rnd(2, 9); b = rnd(2, 9); return num(a * b + ' : ' + a, b, '', { hint: '' }); }
+  if (t === 3) { a = rnd(11, 30); b = rnd(2, 5); return num(a + ' × ' + b, a * b, '', { hint: '' }); }
+  a = rnd(2, 9); b = rnd(3, 12); return num(a + ' × ? = ' + a * b, b, '', { hint: '' });
+}
+
+var GEN = { mult: mult, div: div, eq: eq, word: word, geo: geo, units: units, order: order, big: big, frac: frc, speed: speed, vpr: vpr };
+root.BK = { GEN: GEN, blitz: blitz, fmt: fmt };
+})(typeof window !== 'undefined' ? window : module.exports);
+</script>
+<script>
+(function () {
+'use strict';
+var BK = window.BK, rnd = function (a, b) { return Math.floor(Math.random() * (b - a + 1)) + a; };
+var KEY = 'blok-kvest-v1', XPL = 120;
+
+var WORLDS = [
+  { id: 'mult', name: 'Шахта умножения', glyph: '×', c: 'orange', desc: 'Таблица, двузначные и трёхзначные числа' },
+  { id: 'div', name: 'Арена деления', glyph: '÷', c: 'blue', desc: 'Деление и деление с остатком' },
+  { id: 'eq', name: 'Лаборатория уравнений', glyph: 'x=', c: 'purple', desc: 'Найди неизвестное x' },
+  { id: 'word', name: 'Город задач', glyph: '?', c: 'teal', desc: 'Текстовые задачи в 1–3 действия' },
+  { id: 'geo', name: 'Стройка', glyph: 'P·S', c: 'grass', desc: 'Периметр и площадь фигур', s3: true },
+  { id: 'units', name: 'Склад величин', glyph: 'км', c: 'pink', desc: 'Длина, масса, время' },
+  { id: 'order', name: 'Башня действий', glyph: '( )', c: 'red', desc: 'Порядок действий и скобки' },
+  { id: 'big', name: 'Горы больших чисел', glyph: '000', c: 'gold', desc: 'Числа до миллиона, сложение и вычитание', s3: true },
+  { id: 'frac', name: 'Кухня долей', glyph: '½', c: 'lime', desc: 'Доли и дроби' },
+  { id: 'speed', name: 'Трасса скорости', glyph: 'v', c: 'cyan', desc: 'Скорость, время, расстояние' },
+  { id: 'vpr', name: 'Остров ВПР', glyph: 'ВПР', c: 'silver', desc: 'Задания в стиле ВПР: диаграммы, ряды, логика', s3: true }
+];
+var WID = {}; WORLDS.forEach(function (w) { WID[w.id] = w; });
+var LVN = ['Разминка', 'Бой', 'Босс'];
+var RANKS = ['Новичок', 'Шахтёр', 'Строитель', 'Воин', 'Мастер', 'Герой', 'Легенда'];
+var PRAISE = ['Верно!', 'В точку!', 'Отлично!', 'Так держать!', 'Мощно!', 'Чисто сработано!', 'Есть!'];
+
+var SKINS = [
+  { id: 's0', n: 'Новичок', p: 0, head: '#f1c493', shirt: '#3b82f6', arm: '#f1c493', pants: '#25408f', acc: '' },
+  { id: 's1', n: 'Шахтёр', p: 30, head: '#e2b184', shirt: '#f59e0b', arm: '#e2b184', pants: '#4b5563', acc: 'helmet' },
+  { id: 's2', n: 'Ниндзя', p: 45, head: '#202733', shirt: '#202733', arm: '#202733', pants: '#2f394b', acc: 'ninja' },
+  { id: 's3', n: 'Космонавт', p: 60, head: '#e8edf7', shirt: '#e8edf7', arm: '#e8edf7', pants: '#b9c2da', acc: 'visor' },
+  { id: 's4', n: 'Пират', p: 75, head: '#e7b98e', shirt: '#b3202a', arm: '#e7b98e', pants: '#2b2f42', acc: 'bandana' },
+  { id: 's5', n: 'Робот', p: 90, head: '#9aa6bd', shirt: '#6f7c97', arm: '#9aa6bd', pants: '#4a556e', acc: 'robot', eye: '#6ff3ff' },
+  { id: 's6', n: 'Маг', p: 110, head: '#efc79f', shirt: '#6d3fd0', arm: '#efc79f', pants: '#43268a', acc: 'wiz' },
+  { id: 's7', n: 'Рыцарь', p: 140, head: '#aeb7c9', shirt: '#8c97ad', arm: '#aeb7c9', pants: '#5d6780', acc: 'knight' },
+  { id: 's8', n: 'Король', p: 200, head: '#f0c398', shirt: '#c0262d', arm: '#f0c398', pants: '#4a2a7c', acc: 'crown' },
+  { id: 's9', n: 'Дракон', p: 260, head: '#5fc454', shirt: '#3b9a3a', arm: '#5fc454', pants: '#276a2a', acc: 'horns' }
+];
+var SK = {}; SKINS.forEach(function (s) { SK[s.id] = s; });
+
+/* ---------- сохранение ---------- */
+function defaults() {
+  return {
+    coins: 0, xp: 0, stars: {}, stats: {}, owned: ['s0'], skin: 's0', mistakes: [], blitzBest: 0, redeemed: [],
+    settings: { hearts: true, sound: true, hints: true, n: 8 },
+    prizes: [
+      { name: '5 минут любимой игры', cost: 30 },
+      { name: 'Выбрать музыку на урок', cost: 20 },
+      { name: 'Перерыв 3 минуты', cost: 15 },
+      { name: 'Выбрать тему следующего задания', cost: 25 }
+    ]
+  };
+}
+function load() {
+  var d = defaults();
+  try {
+    var j = JSON.parse(localStorage.getItem(KEY));
+    if (j && typeof j === 'object') { for (var k in j) d[k] = j[k]; d.settings = Object.assign(defaults().settings, j.settings || {}); }
+  } catch (e) {}
+  return d;
+}
+var S = load();
+function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+
+/* ---------- утилиты ---------- */
+var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+var strip = function (s) { return String(s).replace(/<[^>]+>/g, ' ').replace(/ /g, ' ').replace(/\s+/g, ' ').trim(); };
+var shuffle = function (a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = rnd(0, i), t = a[i]; a[i] = a[j]; a[j] = t; } return a; };
+var level = function () { return 1 + Math.floor(S.xp / XPL); };
+var rank = function () { return RANKS[Math.min(RANKS.length - 1, Math.floor((level() - 1) / 2))]; };
+var CI = '<i class="ci"></i>';
+function ansText(t) {
+  if (t.type === 'choice') return esc(t.ans[0]);
+  return t.fields.map(function (f, i) { return (f.label ? f.label + ' ' : '') + t.ans[i] + (f.unit ? ' ' + f.unit : ''); }).join(', ');
+}
+function heart(on) {
+  return '<svg viewBox="0 0 7 6" shape-rendering="crispEdges" aria-hidden="true"><path fill="' + (on ? '#ff4a4a' : '#3a456f') + '" d="M1 0h2v1h1V0h2v1h1v2H6v1H5v1H4v1H3V5H2V4H1V3H0V1h1z"/></svg>';
+}
+function avatar(id) {
+  var s = SK[id] || SK.s0, o = '', R = function (x, y, w, h, c, op) { o += '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" fill="' + c + '"' + (op ? ' opacity="' + op + '"' : '') + '/>'; };
+  R(0, 8, 4, 5, s.shirt); R(0, 13, 4, 3, s.arm); R(12, 8, 4, 5, s.shirt); R(12, 13, 4, 3, s.arm);
+  R(4, 8, 8, 8, s.shirt); R(4, 16, 4, 8, s.pants); R(8, 16, 4, 8, s.pants); R(8, 16, 4, 8, '#000', .16);
+  R(4, 22, 4, 2, '#1b2030'); R(8, 22, 4, 2, '#1b2030');
+  R(4, 0, 8, 8, s.head);
+  if (s.acc === 'ninja') R(4, 2, 8, 3, '#f1c493');
+  if (s.acc === 'visor') R(4, 1, 8, 5, '#2f7be0', .9);
+  var eye = s.eye || (s.acc === 'ninja' ? '#202733' : '#1b2030');
+  if (s.acc !== 'visor') { R(5, 3, 2, 2, eye); R(9, 3, 2, 2, eye); R(6, 6, 4, 1, 'rgba(0,0,0,.35)'); }
+  if (s.acc === 'helmet') { R(3, -1, 10, 4, '#ffd23f'); R(7, -2, 2, 1, '#fff6c0'); }
+  if (s.acc === 'visor') R(3, -1, 10, 2, '#fff');
+  if (s.acc === 'bandana') { R(4, 0, 8, 2, '#d33'); R(11, 1, 3, 2, '#d33'); }
+  if (s.acc === 'robot') { R(7, -3, 2, 3, '#cfd6e6'); R(6, -4, 4, 1, '#ff5050'); }
+  if (s.acc === 'wiz') { R(3, -1, 10, 1, '#4b2aa0'); R(5, -3, 6, 2, '#5a35c0'); R(7, -5, 2, 2, '#6d3fd0'); R(7, -2, 2, 1, '#ffc72c'); }
+  if (s.acc === 'knight') { R(4, 0, 8, 3, '#c8d0e0'); R(7, -3, 2, 3, '#ff5050'); }
+  if (s.acc === 'crown') { R(4, -2, 8, 2, '#ffc72c'); R(4, -4, 2, 2, '#ffc72c'); R(7, -4, 2, 2, '#ffc72c'); R(10, -4, 2, 2, '#ffc72c'); }
+  if (s.acc === 'horns') { R(3, -2, 2, 3, '#ffe3a0'); R(11, -2, 2, 3, '#ffe3a0'); }
+  return '<svg viewBox="0 -6 16 30" shape-rendering="crispEdges" role="img" aria-label="Персонаж ' + esc(s.n) + '">' + o + '</svg>';
+}
+function chestSvg() {
+  return '<svg viewBox="0 -4 40 38" shape-rendering="crispEdges" aria-hidden="true">' +
+    '<rect x="2" y="16" width="36" height="16" fill="#8a5632"/><rect x="2" y="16" width="36" height="3" fill="#5e3920"/><rect x="2" y="26" width="36" height="2" fill="#6f4425"/><rect x="2" y="30" width="36" height="2" fill="#5e3920"/>' +
+    '<g class="glow"><rect x="5" y="12" width="30" height="5" fill="#ffe27a"/><rect x="9" y="6" width="22" height="6" fill="#fff3b0" opacity=".7"/></g>' +
+    '<g class="lid"><rect x="2" y="5" width="36" height="12" fill="#a86a3c"/><rect x="2" y="5" width="36" height="3" fill="#c98a56"/><rect x="2" y="14" width="36" height="3" fill="#5e3920"/></g>' +
+    '<rect x="17" y="14" width="6" height="7" fill="#ffc72c"/><rect x="19" y="17" width="2" height="2" fill="#7a5200"/></svg>';
+}
+
+/* ---------- звук ---------- */
+var AC = null;
+function snd(k) {
+  if (!S.settings.sound) return;
+  try {
+    AC = AC || new (window.AudioContext || window.webkitAudioContext)();
+    var seq = { ok: [[660, .08], [880, .12]], bad: [[180, .22]], win: [[523, .1], [659, .1], [784, .1], [1047, .22]], chest: [[392, .08], [523, .08], [659, .08], [784, .08], [1047, .25]], buy: [[880, .07], [1175, .12]] }[k];
+    var t = AC.currentTime;
+    seq.forEach(function (n) {
+      var o = AC.createOscillator(), g = AC.createGain();
+      o.type = k === 'bad' ? 'sawtooth' : 'square'; o.frequency.value = n[0]; g.gain.value = .05;
+      o.connect(g); g.connect(AC.destination); o.start(t); g.gain.setTargetAtTime(0, t + n[1] * .8, .02); o.stop(t + n[1]); t += n[1];
+    });
+  } catch (e) {}
+}
+function toast(m) {
+  var d = document.createElement('div'); d.className = 'toast'; d.textContent = m; document.body.appendChild(d);
+  setTimeout(function () { d.remove(); }, 2300);
+}
+function floatText(txt) {
+  var q = document.getElementById('qcard'); if (!q) return;
+  var r = q.getBoundingClientRect(), d = document.createElement('div');
+  d.className = 'floaty'; d.innerHTML = txt; d.style.left = (r.left + r.width / 2 - 30) + 'px'; d.style.top = (r.top + 10) + 'px';
+  document.body.appendChild(d); setTimeout(function () { d.remove(); }, 950);
+}
+
+/* ---------- состояние интерфейса ---------- */
+var app = document.getElementById('app');
+var ui = { screen: 'hub', wid: null, run: null, res: null, modal: null, timer: null, resetArm: false };
+function go(screen, extra) {
+  if (ui.timer) { clearInterval(ui.timer); ui.timer = null; }
+  ui.screen = screen; ui.modal = null; ui.resetArm = false; Object.assign(ui, extra || {});
+  render(); window.scrollTo(0, 0);
+}
+function render() {
+  ({ hub: rHub, world: rWorld, play: rPlay, result: rResult, shop: rShop, prizes: rPrizes, tutor: rTutor })[ui.screen]();
+  if (ui.modal) {
+    var m = ui.modal;
+    app.insertAdjacentHTML('beforeend', '<div class="modal"><div class="box" role="dialog" aria-modal="true"><h3>' + esc(m.t) + '</h3><p style="margin:0">' + esc(m.p) + '</p><div class="row"><button class="btn ghost" data-act="modalno">Остаться</button><button class="btn red" data-act="' + m.act + '">' + esc(m.yes) + '</button></div></div></div>');
+  }
+}
+
+/* ---------- главное меню ---------- */
+function totalStars(wid) { var a = S.stars[wid] || [0, 0, 0]; return (a[0] || 0) + (a[1] || 0) + (a[2] || 0); }
+function rHub() {
+  var inx = Math.floor((S.xp % XPL) / (XPL / 10)), bl = '';
+  for (var i = 0; i < 10; i++) bl += '<i class="' + (i < inx ? 'on' : '') + '"></i>';
+  var cards = WORLDS.map(function (w) {
+    var st = totalStars(w.id);
+    return '<button class="wcard c-' + w.c + '" data-act="world" data-id="' + w.id + '"><span class="glyph' + (w.s3 ? ' s3' : '') + '">' + esc(w.glyph) + '</span><span style="min-width:0"><h3>' + esc(w.name) + '</h3><p>' + esc(w.desc) + '</p><span class="mini"><span class="bar"><i style="width:' + Math.round(st / 9 * 100) + '%"></i></span>★ ' + st + '/9</span></span></button>';
+  }).join('');
+  app.innerHTML =
+    '<div class="head"><div class="brand">БЛОК<span>-КВЕСТ</span><small>Математика 4 класса: собирай монеты, качай уровень</small></div><div class="sp"></div><span class="chip" title="Монеты">' + CI + ' ' + S.coins + '</span></div>' +
+    '<div class="hero c-grass"><div class="stage">' + avatar(S.skin) + '</div><div class="who"><div class="name">' + esc(SK[S.skin].n) + ' · уровень ' + level() + '</div><div class="rank">Звание: ' + rank() + '</div><div class="xp" title="Опыт до следующего уровня">' + bl + '</div><div style="font-size:.85rem;color:#dcecff">Ещё ' + (XPL - S.xp % XPL) + ' опыта до уровня ' + (level() + 1) + '</div></div><div class="ground"></div></div>' +
+    '<div class="heroNav"><button class="btn gold" data-act="shop">Магазин скинов</button><button class="btn blue" data-act="prizes">Награды</button><span class="sp"></span><button class="btn ghost sm" data-act="tutor">Репетитор</button></div>' +
+    '<div class="sec"><h2>Быстрый раунд</h2></div>' +
+    '<div class="grid"><div class="blitz"><button class="wcard c-red" data-act="blitz"><span class="glyph s3">60 с</span><span><h3>Таблица на скорость</h3><p>Успей решить как можно больше примеров за минуту. Рекорд: ' + S.blitzBest + '</p></span></button></div></div>' +
+    '<div class="sec"><h2>Выбери мир</h2></div><div class="grid">' + cards + '</div>';
+}
+
+/* ---------- экран мира ---------- */
+function rWorld() {
+  var w = WID[ui.wid], a = S.stars[w.id] || [0, 0, 0], rec = a.findIndex(function (x) { return (x || 0) < 3; }); if (rec < 0) rec = 2;
+  var descs = ['Привыкаем к теме. Примеры попроще.', 'Задания как в учебнике.', 'Сложные примеры и ВПР-стиль.'];
+  var cards = [0, 1, 2].map(function (l) {
+    var st = '';
+    for (var i = 0; i < 3; i++) st += '<span class="star' + ((a[l] || 0) > i ? ' on' : '') + '">★</span>';
+    return '<div class="lvc' + (l === rec ? ' rec' : '') + '"><h3>Уровень ' + (l + 1) + ': ' + LVN[l] + '</h3><div class="dim">' + descs[l] + '</div><div class="stars" aria-label="Звёзд: ' + (a[l] || 0) + ' из 3">' + st + '</div><button class="btn" data-act="start" data-lv="' + l + '">' + ((a[l] || 0) ? 'Играть ещё' : 'Начать') + '</button></div>';
+  }).join('');
+  app.innerHTML = '<div class="c-' + w.c + '"><div class="head"><button class="btn ghost sm" data-act="hub">← В меню</button><div class="sp"></div><span class="chip">' + CI + ' ' + S.coins + '</span></div>' +
+    '<div class="panel row" style="gap:16px"><span class="glyph xl' + (w.s3 ? ' s3' : '') + '" style="' + (w.s3 ? 'font-size:1.5rem' : '') + '">' + esc(w.glyph) + '</span><div style="min-width:0"><h1 style="font-size:clamp(1.4rem,5vw,2rem)">' + esc(w.name) + '</h1><div class="dim">' + esc(w.desc) + '</div></div></div>' +
+    '<div class="lv">' + cards + '</div><p class="dim" style="margin-top:16px">В миссии ' + S.settings.n + ' заданий. Ошибся — задание вернётся позже с новыми числами. Звёзды: 3 — без ошибок, 2 — до двух ошибок, 1 — прошёл.</p></div>';
+}
+
+/* ---------- запуск ---------- */
+function startRun(wid, lv) {
+  var pool = BK.GEN[wid][lv], n = S.settings.n, queue = [], bag = [];
+  for (var i = 0; i < n; i++) { if (!bag.length) bag = shuffle(pool); queue.push(bag.pop()); }
+  ui.run = { wid: wid, lv: lv, n: n, queue: queue, done: 0, ok: 0, bad: 0, coins: 0, hearts: 3, streak: 0, startLvl: level(), phase: 'ask', blitz: false, tm: null };
+  newTask(); go('play');
+}
+function startBlitz() {
+  ui.run = { wid: 'blitz', lv: 0, n: 0, done: 0, ok: 0, bad: 0, coins: 0, hearts: 3, streak: 0, startLvl: level(), phase: 'ask', blitz: true, timeLeft: 60, tm: null, flash: null };
+  newTask(); go('play');
+  ui.timer = setInterval(function () {
+    if (ui.modal) return;
+    var r = ui.run; r.timeLeft = Math.max(0, r.timeLeft - 0.1);
+    var b = document.getElementById('tbar'), n = document.getElementById('tnum');
+    if (b) b.style.width = (r.timeLeft / 60 * 100) + '%'; if (n) n.textContent = Math.ceil(r.timeLeft);
+    if (r.timeLeft <= 0) finish(true);
+  }, 100);
+}
+function newTask() {
+  var r = ui.run, t, tries = 0, gen;
+  if (r.blitz) gen = BK.blitz; else gen = r.queue.shift();
+  do { t = gen(); tries++; } while (t.q === r.lastQ && tries < 8);
+  r.cur = t; r.curGen = gen; r.lastQ = t.q; r.fields = t.fields.map(function () { return ''; }); r.active = 0;
+  r.phase = 'ask'; r.hintUsed = false; r.hintOpen = false; r.choice = null; r.t0 = Date.now();
+}
+
+/* ---------- экран задания ---------- */
+function fieldsHtml() {
+  var r = ui.run, t = r.cur;
+  return t.fields.map(function (f, i) {
+    var cls = r.phase === 'ask' ? '' : (r.lastOk ? ' ok' : ' bad'), v = r.fields[i];
+    return '<div class="fld' + (i === r.active && r.phase === 'ask' ? ' act' : '') + '" data-act="fld" data-i="' + i + '">' + (f.label ? '<span class="lab">' + esc(f.label) + '</span>' : '') +
+      '<div class="box"><div class="val' + (v === '' ? ' empty' : '') + cls + '" aria-label="Поле ответа">' + esc(v) + '</div>' + (f.unit ? '<span class="unit">' + esc(f.unit) + '</span>' : '') + '</div></div>';
+  }).join('');
+}
+function paintFields() { var f = document.getElementById('fields'); if (f) f.innerHTML = fieldsHtml(); }
+function rPlay() {
+  var r = ui.run, t = r.cur, w = r.blitz ? { name: 'Быстрый раунд', c: 'red' } : WID[r.wid], top, i;
+  if (r.blitz) {
+    top = '<div class="timer"><i id="tbar" style="width:' + (r.timeLeft / 60 * 100) + '%"></i></div><div class="tnum" id="tnum">' + Math.ceil(r.timeLeft) + '</div><span class="chip">' + CI + ' <b id="bsc" style="font-weight:400">' + r.ok + '</b></span>';
+  } else {
+    var hs = '';
+    if (S.settings.hearts) { hs = '<div class="hearts" role="img" aria-label="Сердец: ' + r.hearts + '">'; for (i = 0; i < 3; i++) hs += heart(i < r.hearts); hs += '</div>'; }
+    var pr = ''; for (i = 0; i < r.n; i++) pr += '<i class="' + (i < r.done ? 'on' : '') + '"></i>';
+    top = hs + '<div class="prog" role="img" aria-label="Выполнено ' + r.done + ' из ' + r.n + '">' + pr + '</div><span class="chip">' + CI + ' ' + r.coins + '</span>';
+  }
+  if (r.streak >= 3) top += '<span class="combo">Комбо ×' + r.streak + '</span>';
+  var ans = '';
+  if (t.type === 'num') ans = '<div class="fields" id="fields">' + fieldsHtml() + '</div>';
+  else {
+    ans = '<div class="choices">' + t.choices.map(function (c) {
+      var st = '';
+      if (r.phase !== 'ask') { if (c === t.ans[0]) st = ' style="--c:var(--grass);--cd:var(--grass-d)"'; else if (c === r.choice) st = ' style="--c:var(--red);--cd:var(--red-d)"'; }
+      return '<button class="btn ghost" data-act="choice" data-v="' + esc(c) + '"' + st + (r.phase !== 'ask' ? ' disabled' : '') + '>' + esc(c) + '</button>';
+    }).join('') + '</div>';
+  }
+  var fb = '', tools = '', pad = '', next = '';
+  if (r.phase === 'ask' && !r.blitz && S.settings.hints && t.hint) tools = '<div class="tools"><button class="btn ghost sm" data-act="hint">' + (r.hintOpen ? 'Скрыть подсказку' : 'Подсказка') + '</button></div>';
+  if (r.phase === 'ask' && r.hintOpen && t.hint) tools += '<div class="hintbox">' + esc(t.hint) + '</div>';
+  if (r.phase === 'right' && !r.blitz) fb = '<div class="fb ok" role="status"><b>' + r.praise + '</b>+' + r.gain + ' ' + CI + (r.quick ? ' · быстро, бонус!' : '') + '</div>';
+  if (r.phase === 'wrong' && !r.blitz) fb = '<div class="fb bad" role="status"><b>Почти!</b>Правильный ответ: <span class="ans">' + ansText(t) + '</span>' + (t.expl ? '<div class="ex">' + t.expl + '</div>' : '') + '<div class="ex dim" style="margin-top:6px">' + (S.settings.hearts && r.hearts <= 0 ? 'Сердца закончились.' : 'Это задание вернётся позже с другими числами.') + '</div></div>';
+  if (r.phase === 'ask' && t.type === 'num') {
+    var keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9'].map(function (k) { return '<button class="btn" data-act="key" data-k="' + k + '">' + k + '</button>'; }).join('');
+    pad = '<div class="pad">' + keys + '<button class="btn k-back" data-act="key" data-k="back" aria-label="Стереть">⌫</button><button class="btn" data-act="key" data-k="0">0</button><button class="btn k-ok" data-act="key" data-k="ok">' + (r.blitz ? 'Ответ' : 'Проверить') + '</button></div>';
+  }
+  if (r.phase !== 'ask' && !r.blitz) next = '<div class="nextbar"><button class="btn big" data-act="next">' + ((r.phase === 'wrong' && S.settings.hearts && r.hearts <= 0) ? 'Дальше' : 'Дальше →') + '</button></div>';
+  var fl = (r.blitz && r.flash) ? '<div class="flash ' + (r.flash.ok ? 'ok' : 'bad') + '" role="status">' + r.flash.t + '</div>' : (r.blitz ? '<div class="flash"></div>' : '');
+  var long = strip(t.q).length > 70 ? ' long' : '';
+  app.innerHTML = '<div class="play c-' + w.c + '"><div class="hud"><button class="btn ghost sm" data-act="quit">✕ Выйти</button>' + top + '</div>' +
+    '<div class="qcard" id="qcard"><div class="qtag">' + esc(w.name) + (r.blitz ? '' : ' · ' + LVN[r.lv]) + '</div><div class="q' + long + '">' + t.q + '</div>' +
+    (t.fig ? '<div class="figwrap">' + t.fig + '</div>' : '') + ans + tools + fb + fl + '</div>' + pad + next + '</div>';
+  if (r.phase === 'wrong') { var qc = document.getElementById('qcard'); if (qc) qc.classList.add('shake'); }
+}
+
+/* ---------- ввод ---------- */
+function press(k) {
+  var r = ui.run; if (!r || r.phase !== 'ask' || r.cur.type !== 'num') return;
+  var v = r.fields[r.active];
+  if (k === 'back') v = v.slice(0, -1);
+  else if (k === 'ok') {
+    if (r.fields.every(function (f) { return f !== ''; })) { submit(); return; }
+    if (r.fields[r.active] !== '') r.active = r.fields.findIndex(function (f) { return f === ''; });
+    paintFields(); return;
+  } else if (/^\d$/.test(k)) { if (v.length < 8) v = (v === '0' ? '' : v) + k; }
+  r.fields[r.active] = v; paintFields();
+  if (r.blitz && r.fields.length === 1 && v.length === String(r.cur.ans[0]).length) submit();
+}
+function submit() {
+  var r = ui.run; if (!r || r.phase !== 'ask') return;
+  var t = r.cur, ok, given;
+  if (t.type === 'num') {
+    if (r.fields.some(function (f) { return f === ''; })) return;
+    given = r.fields.map(Number); ok = given.every(function (v, i) { return v === t.ans[i]; });
+  } else { given = [r.choice]; ok = r.choice === t.ans[0]; }
+  var sec = (Date.now() - r.t0) / 1000;
+  var st = S.stats[r.wid] || (S.stats[r.wid] = { ok: 0, bad: 0 });
+  r.lastOk = ok;
+  if (ok) {
+    st.ok++; r.streak++; r.ok++; r.done++;
+    var c = 2; if (r.streak >= 3) c++; if (r.streak >= 5) c++;
+    r.quick = sec < 10 && !r.hintUsed; if (r.quick) c++;
+    if (r.blitz) { c = 1; r.quick = false; }
+    r.gain = c; r.coins += c; S.coins += c; S.xp += r.blitz ? 2 : 5;
+    r.praise = r.streak >= 5 ? 'Серия ×' + r.streak + '!' : PRAISE[rnd(0, PRAISE.length - 1)];
+    r.phase = 'right'; snd('ok');
+  } else {
+    st.bad++; r.streak = 0; r.bad++;
+    if (!r.blitz) { if (S.settings.hearts) r.hearts--; r.queue.push(r.curGen); }
+    S.mistakes.unshift({ w: r.blitz ? 'Быстрый раунд' : WID[r.wid].name, q: strip(t.q) + (t.fig ? ' [рисунок]' : ''), a: strip(ansText(t)), g: t.type === 'num' ? given.join(' / ') : String(given[0]), t: Date.now() });
+    S.mistakes = S.mistakes.slice(0, 30);
+    r.phase = 'wrong'; snd('bad');
+  }
+  save();
+  if (r.blitz) {
+    r.flash = ok ? { ok: true, t: 'Верно!' } : { ok: false, t: 'Было: ' + ansText(t) };
+    newTask(); rPlay(); if (ok) floatText('+1');
+    return;
+  }
+  rPlay();
+  if (ok) { floatText('+' + r.gain); r.tm = setTimeout(next, 1300); }
+}
+function next() {
+  var r = ui.run; if (!r || r.phase === 'ask') return;
+  clearTimeout(r.tm);
+  if (!r.blitz && S.settings.hearts && r.hearts <= 0) return finish(false);
+  if (!r.blitz && r.done >= r.n) return finish(true);
+  newTask(); rPlay();
+}
+function finish(win) {
+  var r = ui.run; clearTimeout(r.tm); if (ui.timer) { clearInterval(ui.timer); ui.timer = null; }
+  var stars = 0, bonus = 0, record = false, chest = false;
+  if (r.blitz) {
+    if (r.ok > S.blitzBest) { S.blitzBest = r.ok; record = r.ok > 0; }
+    chest = r.ok >= 8;
+  } else if (win) {
+    stars = r.bad === 0 ? 3 : (r.bad <= 2 ? 2 : 1); bonus = stars * 3;
+    var a = S.stars[r.wid] || (S.stars[r.wid] = [0, 0, 0]); a[r.lv] = Math.max(a[r.lv] || 0, stars);
+    S.coins += bonus; S.xp += 20; chest = true;
+  }
+  save(); snd(win && (stars || chest) ? 'win' : 'bad');
+  go('result', { res: { win: win, stars: stars, bonus: bonus, chest: chest, opened: false, reward: 0, record: record, lvup: level() > r.startLvl } });
+}
+
+/* ---------- итог ---------- */
+function rResult() {
+  var r = ui.run, x = ui.res, w = r.blitz ? { name: 'Быстрый раунд', c: 'red' } : WID[r.wid], head, sub, st = '';
+  if (r.blitz) { head = 'Время вышло!'; sub = 'Решено верно: ' + r.ok + (x.record ? '. Новый рекорд!' : '. Рекорд: ' + S.blitzBest); }
+  else if (x.win) { head = 'Миссия пройдена!'; for (var i = 0; i < 3; i++) st += '<span class="star' + (x.stars > i ? ' on' : '') + '">★</span>'; sub = x.stars === 3 ? 'Без единой ошибки. Мощно!' : (x.stars === 2 ? 'Почти идеально.' : 'Пройдено. В следующий раз попробуй без ошибок.'); }
+  else { head = 'Сердца закончились'; sub = 'Ничего страшного. Монеты, что ты собрал, остались при тебе. Попробуй ещё раз.'; }
+  var chest = '';
+  if (x.chest) chest = '<div class="chest' + (x.opened ? ' open' : ' wob') + '">' + chestSvg() + '</div>' +
+    (x.opened ? '<div class="chip" style="font-size:1.4rem">+' + x.reward + ' ' + CI + '</div>' : '<button class="btn gold big" data-act="chest">Открыть сундук</button>');
+  var btns = '<div class="row" style="justify-content:center">' + (r.blitz ? '<button class="btn" data-act="blitz">Ещё раз</button>' : '<button class="btn" data-act="start" data-lv="' + r.lv + '" data-id="' + r.wid + '">Ещё раз</button>' + (x.win && r.lv < 2 ? '<button class="btn blue" data-act="start" data-lv="' + (r.lv + 1) + '" data-id="' + r.wid + '">Следующий уровень</button>' : '')) + '<button class="btn ghost" data-act="hub">В меню</button></div>';
+  app.innerHTML = '<div class="result c-' + w.c + '"><h2>' + head + '</h2>' + (st ? '<div class="stars lg">' + st + '</div>' : '') + '<p style="margin:0" class="dim">' + sub + '</p>' + (x.lvup ? '<div class="lvup">Новый уровень: ' + level() + '!</div>' : '') +
+    '<div class="stat"><div class="chip"><small>Верно</small><b>' + r.ok + '</b></div><div class="chip"><small>Ошибки</small><b>' + r.bad + '</b></div><div class="chip"><small>Монеты</small><b>' + (r.coins + x.bonus) + '</b></div></div>' +
+    (x.bonus ? '<div class="dim">Бонус за звёзды: +' + x.bonus + '</div>' : '') + chest + btns + '</div>';
+}
+
+/* ---------- магазин и награды ---------- */
+function rShop() {
+  var cards = SKINS.map(function (s) {
+    var own = S.owned.indexOf(s.id) >= 0, eq = S.skin === s.id, btn;
+    if (eq) btn = '<button class="btn ghost sm" disabled>Надето</button>';
+    else if (own) btn = '<button class="btn sm" data-act="equip" data-id="' + s.id + '">Надеть</button>';
+    else btn = '<button class="btn gold sm" data-act="buy" data-id="' + s.id + '"' + (S.coins < s.p ? ' disabled' : '') + '>' + s.p + ' ' + CI + '</button>';
+    return '<div class="skin' + (eq ? ' eq' : '') + '"><div class="pv">' + avatar(s.id) + '</div><b style="font-family:var(--font-d);font-weight:400">' + esc(s.n) + '</b>' + btn + '</div>';
+  }).join('');
+  app.innerHTML = '<div class="head"><button class="btn ghost sm" data-act="hub">← В меню</button><h1 style="font-size:1.6rem">Магазин скинов</h1><div class="sp"></div><span class="chip">' + CI + ' ' + S.coins + '</span></div><div class="shop">' + cards + '</div>';
+}
+function rPrizes() {
+  var list = S.prizes.length ? S.prizes.map(function (p, i) {
+    return '<div class="prize"><div class="t">' + esc(p.name) + '</div><span class="chip">' + p.cost + ' ' + CI + '</span><button class="btn gold sm" data-act="claim" data-i="' + i + '"' + (S.coins < p.cost ? ' disabled' : '') + '>Получить</button></div>';
+  }).join('') : '<p class="dim">Пока наград нет. Репетитор может добавить их в своём разделе.</p>';
+  var done = S.redeemed.length ? '<div class="sec"><h2 style="font-size:1.1rem">Уже получено</h2></div><div class="dim">' + S.redeemed.slice(0, 8).map(function (p) { return esc(p.name); }).join(' · ') + '</div>' : '';
+  app.innerHTML = '<div class="head"><button class="btn ghost sm" data-act="hub">← В меню</button><h1 style="font-size:1.6rem">Награды</h1><div class="sp"></div><span class="chip">' + CI + ' ' + S.coins + '</span></div><p class="dim" style="margin-top:0">Монеты можно обменять на настоящие награды. Нажми «Получить» и скажи об этом репетитору.</p>' + list + done;
+}
+
+/* ---------- репетитор ---------- */
+function fmtT(ts) { try { return new Date(ts).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }); } catch (e) { return ''; } }
+function rTutor() {
+  var rows = WORLDS.concat([{ id: 'blitz', name: 'Быстрый раунд', c: 'red' }]).map(function (w) {
+    var s = S.stats[w.id] || { ok: 0, bad: 0 }, tot = s.ok + s.bad, pc = tot ? Math.round(s.ok / tot * 100) : 0, col = pc >= 80 ? 'var(--grass)' : (pc >= 60 ? 'var(--gold)' : 'var(--red)');
+    return '<tr><td>' + esc(w.name) + '</td><td>' + tot + '</td><td>' + (tot ? '<span class="acc"><i style="width:' + pc + '%;background:' + col + '"></i></span>' + pc + '%' : '—') + '</td><td>' + (w.id === 'blitz' ? 'рекорд ' + S.blitzBest : '★ ' + totalStars(w.id) + '/9') + '</td></tr>';
+  }).join('');
+  var weak = WORLDS.map(function (w) { var s = S.stats[w.id] || { ok: 0, bad: 0 }, tot = s.ok + s.bad; return { n: w.name, tot: tot, pc: tot ? s.ok / tot : 1 }; })
+    .filter(function (x) { return x.tot >= 6 && x.pc < 0.8; }).sort(function (a, b) { return a.pc - b.pc; }).slice(0, 3);
+  var weakH = weak.length ? '<p style="margin:0 0 6px"><b>Что повторить:</b> ' + weak.map(function (x) { return esc(x.n) + ' (' + Math.round(x.pc * 100) + '%)'; }).join(', ') + '</p>' : '<p class="dim" style="margin:0 0 6px">Слабых тем пока не видно: нужно хотя бы 6 заданий в теме и точность ниже 80%.</p>';
+  var mis = S.mistakes.length ? '<div class="mis">' + S.mistakes.slice(0, 12).map(function (m) { return '<div><b>' + esc(m.w) + '</b> · ' + fmtT(m.t) + '<br>' + esc(m.q) + '<br><span class="dim">Ответил: ' + esc(m.g) + '. Верно: </span><b>' + esc(m.a) + '</b></div>'; }).join('') + '</div>' : '<p class="dim" style="margin:0">Ошибок пока нет.</p>';
+  var T = function (k, label) { return '<button class="tog" data-act="tog" data-k="' + k + '" aria-pressed="' + (S.settings[k] ? 'true' : 'false') + '"><i></i>' + label + '</button>'; };
+  var nb = [6, 8, 10, 12].map(function (n) { return '<button class="btn sm' + (S.settings.n === n ? '' : ' ghost') + '" data-act="setn" data-n="' + n + '">' + n + '</button>'; }).join('');
+  var pr = S.prizes.map(function (p, i) {
+    return '<div class="prow"><input type="text" value="' + esc(p.name) + '" data-pi="' + i + '" data-f="name" aria-label="Название награды"><input type="number" min="1" max="999" value="' + p.cost + '" data-pi="' + i + '" data-f="cost" aria-label="Цена в монетах"><button class="btn ghost sm" data-act="delprize" data-i="' + i + '">Удалить</button></div>';
+  }).join('');
+  var rd = S.redeemed.length ? '<div class="mis">' + S.redeemed.slice(0, 8).map(function (p) { return '<div style="border-color:var(--gold)">' + esc(p.name) + ' · ' + p.cost + ' монет · ' + fmtT(p.t) + '</div>'; }).join('') + '</div>' : '<p class="dim" style="margin:0">Награды ещё не заказывали.</p>';
+  app.innerHTML = '<div class="head"><button class="btn ghost sm" data-act="hub">← В меню</button><h1 style="font-size:1.6rem">Репетитор</h1><div class="sp"></div><span class="chip">' + CI + ' ' + S.coins + '</span></div>' +
+    '<div class="tut">' +
+    '<div class="panel"><h3>Успехи по темам</h3>' + weakH + '<div class="tscroll"><table class="tbl"><thead><tr><th>Тема</th><th>Решено</th><th>Точность</th><th>Прогресс</th></tr></thead><tbody>' + rows + '</tbody></table></div></div>' +
+    '<div class="panel"><h3>Последние ошибки</h3>' + mis + '</div>' +
+    '<div class="panel"><h3>Монеты за старание</h3><div class="row"><button class="btn gold sm" data-act="grant" data-n="5">+5</button><button class="btn gold sm" data-act="grant" data-n="10">+10</button><button class="btn gold sm" data-act="grant" data-n="20">+20</button><span class="dim">Выдай за внимание, усилие, красивое оформление решения.</span></div></div>' +
+    '<div class="panel"><h3>Настройки</h3><div class="set">' + T('hearts', 'Сердца (3 ошибки — конец миссии)') + T('hints', 'Кнопка «Подсказка»') + T('sound', 'Звук') + '</div><div class="row" style="margin-top:12px"><span>Заданий в миссии:</span>' + nb + '</div></div>' +
+    '<div class="panel"><h3>Награды за монеты</h3><p class="dim" style="margin-top:0">Это примеры. Измени на то, что реально мотивирует ученика.</p>' + pr + '<button class="btn sm" data-act="addprize">+ Добавить награду</button><h3 style="margin-top:16px">Заказанные награды</h3>' + rd + '</div>' +
+    '<div class="panel"><h3>Сброс</h3><p class="dim" style="margin-top:0">Прогресс хранится в браузере на этом устройстве. Если открыть игру на другом устройстве, начнётся с нуля.</p><button class="btn red sm" data-act="reset">' + (ui.resetArm ? 'Точно удалить весь прогресс?' : 'Сбросить прогресс') + '</button></div></div>';
+}
+
+/* ---------- события ---------- */
+app.addEventListener('click', function (e) {
+  var b = e.target.closest('[data-act]'); if (!b) return;
+  var d = b.dataset, r = ui.run;
+  switch (d.act) {
+    case 'hub': go('hub'); break;
+    case 'world': go('world', { wid: d.id }); break;
+    case 'start': if (d.id) ui.wid = d.id; startRun(ui.wid, +d.lv); break;
+    case 'blitz': startBlitz(); break;
+    case 'key': press(d.k); break;
+    case 'fld': if (r && r.phase === 'ask') { r.active = +d.i; paintFields(); } break;
+    case 'choice': if (r && r.phase === 'ask') { r.choice = d.v; submit(); } break;
+    case 'hint': r.hintOpen = !r.hintOpen; if (r.hintOpen) r.hintUsed = true; rPlay(); break;
+    case 'next': next(); break;
+    case 'quit': ui.modal = { t: 'Выйти из миссии?', p: 'Прогресс этой миссии пропадёт. Монеты, которые ты уже получил, останутся.', yes: 'Выйти', act: 'quitgo' }; render(); break;
+    case 'quitgo': if (r && r.tm) clearTimeout(r.tm); go(r && r.blitz ? 'hub' : 'world', { wid: r && r.wid }); break;
+    case 'modalno': ui.modal = null; render(); break;
+    case 'chest': {
+      var x = ui.res, roll = Math.random(); x.reward = roll < 0.12 ? rnd(40, 70) : rnd(8, 25); x.opened = true; S.coins += x.reward; save(); snd('chest'); rResult(); break;
+    }
+    case 'shop': go('shop'); break;
+    case 'prizes': go('prizes'); break;
+    case 'tutor': go('tutor'); break;
+    case 'buy': { var s = SK[d.id]; if (s && S.coins >= s.p && S.owned.indexOf(s.id) < 0) { S.coins -= s.p; S.owned.push(s.id); S.skin = s.id; save(); snd('buy'); toast('Куплено: ' + s.n); rShop(); } break; }
+    case 'equip': if (S.owned.indexOf(d.id) >= 0) { S.skin = d.id; save(); rShop(); } break;
+    case 'claim': { var p = S.prizes[+d.i]; if (p && S.coins >= p.cost) { S.coins -= p.cost; S.redeemed.unshift({ name: p.name, cost: p.cost, t: Date.now() }); save(); snd('buy'); toast('Награда заказана. Скажи об этом репетитору'); rPrizes(); } break; }
+    case 'grant': S.coins += +d.n; save(); toast('+' + d.n + ' монет'); rTutor(); break;
+    case 'tog': S.settings[d.k] = !S.settings[d.k]; save(); rTutor(); break;
+    case 'setn': S.settings.n = +d.n; save(); rTutor(); break;
+    case 'addprize': S.prizes.push({ name: 'Новая награда', cost: 20 }); save(); rTutor(); break;
+    case 'delprize': S.prizes.splice(+d.i, 1); save(); rTutor(); break;
+    case 'reset':
+      if (!ui.resetArm) { ui.resetArm = true; rTutor(); setTimeout(function () { if (ui.resetArm) { ui.resetArm = false; if (ui.screen === 'tutor') rTutor(); } }, 5000); }
+      else { S = defaults(); save(); ui.resetArm = false; go('hub'); toast('Прогресс сброшен'); }
+      break;
+  }
+});
+app.addEventListener('change', function (e) {
+  var t = e.target, i = t.dataset && t.dataset.pi; if (i === undefined || !S.prizes[+i]) return;
+  if (t.dataset.f === 'name') S.prizes[+i].name = t.value.slice(0, 80) || 'Награда';
+  else S.prizes[+i].cost = Math.max(1, Math.min(999, parseInt(t.value, 10) || 1));
+  save();
+});
+document.addEventListener('keydown', function (e) {
+  if (ui.screen !== 'play' || ui.modal || !ui.run || e.ctrlKey || e.metaKey || e.altKey) return;
+  var r = ui.run;
+  if (/^\d$/.test(e.key)) { press(e.key); e.preventDefault(); }
+  else if (e.key === 'Backspace') { press('back'); e.preventDefault(); }
+  else if (e.key === 'Enter') { if (r.phase === 'ask') press('ok'); else next(); e.preventDefault(); }
+  else if (e.key === 'Tab' && r.phase === 'ask' && r.cur.type === 'num' && r.fields.length > 1) { r.active = (r.active + 1) % r.fields.length; paintFields(); e.preventDefault(); }
+});
+
+render();
+})();
+</script>
